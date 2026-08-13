@@ -1,0 +1,109 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Training;
+use App\Models\TrainingProgress;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class TrainingController extends Controller
+{
+    public function index()
+    {
+        $user = Auth::user();
+
+        $query = Training::with('creator')->latest();
+
+        if (! $user->isSystemWide()) {
+            $query->where(function ($q) use ($user) {
+                $q->where('target_unit_kerja', $user->unit_kerja)
+                  ->orWhereNull('target_unit_kerja');
+            });
+        }
+
+        $trainings = $query->get();
+        $progresses = TrainingProgress::where('user_id', $user->id)->pluck('status', 'training_id');
+
+        return view('trainings.index', compact('trainings', 'progresses'));
+    }
+
+    public function show(Training $training)
+    {
+        $user = Auth::user();
+
+        abort_unless(
+            $user->isSystemWide()
+                || $training->target_unit_kerja === null
+                || $training->target_unit_kerja === $user->unit_kerja,
+            403
+        );
+
+        $progress = $training->progressFor($user);
+
+        return view('trainings.show', compact('training', 'progress'));
+    }
+
+    public function start(Training $training)
+    {
+        abort_if(Auth::user()->role === 'admin', 403, 'Admin tidak mengikuti pelatihan sebagai peserta.');
+
+        TrainingProgress::firstOrCreate(
+            ['training_id' => $training->id, 'user_id' => Auth::id()],
+            ['status' => 'sedang_berjalan']
+        );
+
+        return redirect()->route('trainings.show', $training)->with('status', 'Pelatihan dimulai.');
+    }
+
+    public function complete(Training $training)
+    {
+        abort_if(Auth::user()->role === 'admin', 403, 'Admin tidak mengikuti pelatihan sebagai peserta.');
+
+        $progress = TrainingProgress::firstOrCreate(
+            ['training_id' => $training->id, 'user_id' => Auth::id()],
+            ['status' => 'sedang_berjalan']
+        );
+
+        $progress->update([
+            'status' => 'selesai',
+            'completed_at' => now(),
+            'certificate_code' => $progress->certificate_code ?? strtoupper(\Illuminate\Support\Str::random(10)),
+        ]);
+
+        return redirect()->route('trainings.show', $training)->with('status', 'Selamat, pelatihan selesai! Sertifikat sudah diterbitkan.');
+    }
+
+    public function create()
+    {
+        abort_unless(in_array(Auth::user()->role, ['atasan', 'pemilik', 'admin']), 403);
+
+        $unitKerjaList = User::whereNotNull('unit_kerja')->distinct()->pluck('unit_kerja');
+
+        return view('trainings.create', compact('unitKerjaList'));
+    }
+
+    public function store(Request $request)
+    {
+        $user = Auth::user();
+        abort_unless(in_array($user->role, ['atasan', 'pemilik', 'admin']), 403);
+
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'target_unit_kerja' => 'nullable|string',
+        ]);
+
+        $target = $user->role === 'atasan' ? $user->unit_kerja : ($validated['target_unit_kerja'] ?? null);
+
+        Training::create([
+            'title' => $validated['title'],
+            'description' => $validated['description'] ?? null,
+            'target_unit_kerja' => $target,
+            'created_by' => $user->id,
+        ]);
+
+        return redirect()->route('trainings.index')->with('status', 'Pelatihan berhasil dibuat.');
+    }
+}

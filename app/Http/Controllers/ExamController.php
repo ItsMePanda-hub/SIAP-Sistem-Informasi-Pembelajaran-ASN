@@ -1,0 +1,251 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Exam;
+use App\Models\ExamAnswer;
+use App\Models\ExamAttempt;
+use App\Models\Training;
+use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+
+class ExamController extends Controller
+{
+    public function index()
+    {
+        $user = Auth::user();
+
+        $query = Exam::with('creator')->latest();
+        if (! $user->isSystemWide()) {
+            $query->where(function ($q) use ($user) {
+                $q->where('target_unit_kerja', $user->unit_kerja)
+                  ->orWhereNull('target_unit_kerja');
+            });
+        }
+
+        $exams = $query->get();
+
+        return view('exams.index', compact('exams'));
+    }
+
+    public function show(Exam $exam)
+    {
+        $user = Auth::user();
+        $this->authorizeAccess($exam, $user);
+
+        $attempt = $exam->attemptFor($user);
+
+        return view('exams.show', compact('exam', 'attempt'));
+    }
+
+    public function start(Exam $exam)
+    {
+        $user = Auth::user();
+        $this->authorizeAccess($exam, $user);
+
+        $attempt = ExamAttempt::firstOrCreate(
+            ['exam_id' => $exam->id, 'user_id' => $user->id],
+            ['status' => 'sedang_berjalan', 'started_at' => now()]
+        );
+
+        if ($attempt->status !== 'sedang_berjalan') {
+            return redirect()->route('exams.show', $exam)->with('status', 'Ujian ini sudah pernah dikerjakan.');
+        }
+
+        return redirect()->route('exams.take', $exam);
+    }
+
+    public function take(Exam $exam)
+    {
+        $user = Auth::user();
+        $attempt = $exam->attemptFor($user);
+
+        abort_unless($attempt && $attempt->status === 'sedang_berjalan', 403, 'Tidak ada ujian yang sedang berjalan.');
+
+        $exam->load('questions.options');
+        $existingAnswers = ExamAnswer::where('exam_attempt_id', $attempt->id)->get()->keyBy('exam_question_id');
+
+        return view('exams.take', compact('exam', 'attempt', 'existingAnswers'));
+    }
+
+    public function saveAnswer(Request $request, Exam $exam)
+    {
+        $user = Auth::user();
+        $attempt = $exam->attemptFor($user);
+
+        abort_unless($attempt && $attempt->status === 'sedang_berjalan', 403);
+
+        $validated = $request->validate([
+            'exam_question_id' => 'required|exists:exam_questions,id',
+            'exam_option_id' => 'nullable|exists:exam_options,id',
+            'essay_answer' => 'nullable|string',
+        ]);
+
+        ExamAnswer::updateOrCreate(
+            ['exam_attempt_id' => $attempt->id, 'exam_question_id' => $validated['exam_question_id']],
+            ['exam_option_id' => $validated['exam_option_id'] ?? null, 'essay_answer' => $validated['essay_answer'] ?? null]
+        );
+
+        return response()->json(['saved' => true]);
+    }
+
+    public function reportViolation(Exam $exam)
+    {
+        $user = Auth::user();
+        $attempt = $exam->attemptFor($user);
+
+        abort_unless($attempt && $attempt->status === 'sedang_berjalan', 403);
+
+        $attempt->increment('violation_count');
+
+        $isFinal = $attempt->violation_count >= $exam->max_violations;
+
+        if ($isFinal) {
+            $this->finishAttempt($attempt, 'selesai_pelanggaran');
+        }
+
+        return response()->json([
+            'violation_count' => $attempt->violation_count,
+            'max_violations' => $exam->max_violations,
+            'is_final' => $isFinal,
+        ]);
+    }
+
+    public function submit(Exam $exam)
+    {
+        $user = Auth::user();
+        $attempt = $exam->attemptFor($user);
+
+        abort_unless($attempt && $attempt->status === 'sedang_berjalan', 403);
+
+        $this->finishAttempt($attempt, 'selesai');
+
+        return redirect()->route('exams.show', $exam)->with('status', 'Ujian berhasil dikumpulkan.');
+    }
+
+    private function finishAttempt(ExamAttempt $attempt, string $status): void
+    {
+        $exam = $attempt->exam;
+        $pgQuestions = $exam->questions()->where('type', 'pilihan_ganda')->get();
+
+        $benar = 0;
+        foreach ($pgQuestions as $q) {
+            $answer = ExamAnswer::where('exam_attempt_id', $attempt->id)
+                ->where('exam_question_id', $q->id)
+                ->first();
+
+            if ($answer && $answer->option && $answer->option->is_correct) {
+                $benar++;
+            }
+        }
+
+        $score = $pgQuestions->count() > 0 ? round(($benar / $pgQuestions->count()) * 100, 2) : null;
+
+        $attempt->update([
+            'status' => $status,
+            'score' => $score,
+            'submitted_at' => now(),
+        ]);
+    }
+
+    private function authorizeAccess(Exam $exam, $user): void
+    {
+        abort_unless(
+            $user->isSystemWide()
+                || $exam->target_unit_kerja === null
+                || $exam->target_unit_kerja === $user->unit_kerja,
+            403
+        );
+    }
+
+    public function create()
+    {
+        abort_unless(in_array(Auth::user()->role, ['atasan', 'pemilik', 'admin']), 403);
+
+        $trainings = Training::all();
+        $unitKerjaList = User::whereNotNull('unit_kerja')->distinct()->pluck('unit_kerja');
+
+        return view('exams.create', compact('trainings', 'unitKerjaList'));
+    }
+
+    public function store(Request $request)
+    {
+        $user = Auth::user();
+        abort_unless(in_array($user->role, ['atasan', 'pemilik', 'admin']), 403);
+
+        $validated = $request->validate([
+            'title' => 'required|string|max:255',
+            'description' => 'nullable|string',
+            'training_id' => 'nullable|exists:trainings,id',
+            'target_unit_kerja' => 'nullable|string',
+            'duration_minutes' => 'nullable|integer|min:1',
+            'max_violations' => 'required|integer|min:1|max:10',
+            'questions' => 'required|array|min:1',
+            'questions.*.type' => 'required|in:pilihan_ganda,esai',
+            'questions.*.question' => 'required|string',
+            'questions.*.options' => 'nullable|array',
+            'questions.*.options.*.text' => 'nullable|string',
+            'questions.*.correct_index' => 'nullable|integer',
+        ]);
+
+        $target = $user->role === 'atasan' ? $user->unit_kerja : ($validated['target_unit_kerja'] ?? null);
+
+        $exam = Exam::create([
+            'training_id' => $validated['training_id'] ?? null,
+            'title' => $validated['title'],
+            'description' => $validated['description'] ?? null,
+            'target_unit_kerja' => $target,
+            'duration_minutes' => $validated['duration_minutes'] ?? null,
+            'max_violations' => $validated['max_violations'],
+            'created_by' => $user->id,
+        ]);
+
+        foreach ($validated['questions'] as $i => $q) {
+            $question = $exam->questions()->create([
+                'type' => $q['type'],
+                'question' => $q['question'],
+                'order' => $i,
+            ]);
+
+            if ($q['type'] === 'pilihan_ganda' && ! empty($q['options'])) {
+                foreach ($q['options'] as $j => $opt) {
+                    if (empty($opt['text'])) {
+                        continue;
+                    }
+                    $question->options()->create([
+                        'option_text' => $opt['text'],
+                        'is_correct' => (int) ($q['correct_index'] ?? -1) === $j,
+                    ]);
+                }
+            }
+        }
+
+        return redirect()->route('exams.index')->with('status', 'Ujian berhasil dibuat.');
+    }
+
+    public function results(Exam $exam)
+    {
+        $user = Auth::user();
+        abort_unless(in_array($user->role, ['atasan', 'pemilik', 'admin']), 403);
+        $this->authorizeAccess($exam, $user);
+
+        $attempts = $exam->attempts()->with(['user', 'answers.question', 'answers.option'])->get();
+
+        return view('exams.results', compact('exam', 'attempts'));
+    }
+
+    public function gradeEssay(Request $request, ExamAnswer $answer)
+    {
+        $user = Auth::user();
+        abort_unless(in_array($user->role, ['atasan', 'pemilik', 'admin']), 403);
+
+        $validated = $request->validate([
+            'is_correct' => 'required|boolean',
+        ]);
+
+        $answer->update(['essay_graded_correct' => $validated['is_correct']]);
+
+        return back()->with('status', 'Penilaian esai tersimpan.');
+    }
+}

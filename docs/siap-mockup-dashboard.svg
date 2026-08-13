@@ -1,0 +1,24 @@
+<svg width="760" height="400" viewBox="0 0 380 200" xmlns="http://www.w3.org/2000/svg" role="img">
+<title>Mockup dashboard SIAP</title>
+<desc>Tampilan dashboard SIAP dengan sidebar navigasi teal di kiri dan konten utama berisi sapaan pengguna, dua kartu metrik, dan pratinjau pengumuman terbaru.</desc>
+<rect x="0" y="0" width="380" height="200" fill="#F4F8F9"/>
+<rect x="0" y="0" width="92" height="200" fill="#3E7C8C"/>
+<text x="12" y="24" font-family="sans-serif" font-size="13" font-weight="500" fill="#FFFFFF">SIAP</text>
+<rect x="8" y="36" width="76" height="20" rx="6" fill="#FFFFFF" fill-opacity="0.18"/>
+<text x="14" y="49" font-family="sans-serif" font-size="11" fill="#FFFFFF">Dashboard</text>
+<text x="14" y="76" font-family="sans-serif" font-size="11" fill="#E7F1F3">Pengumuman</text>
+<text x="14" y="98" font-family="sans-serif" font-size="11" fill="#E7F1F3">Surat</text>
+<text x="14" y="120" font-family="sans-serif" font-size="11" fill="#E7F1F3">Pelatihan</text>
+<text x="14" y="142" font-family="sans-serif" font-size="11" fill="#E7F1F3">Ujian</text>
+<text x="106" y="30" font-family="sans-serif" font-size="14" font-weight="500" fill="#1F3A40">Selamat datang, Siti</text>
+<text x="106" y="48" font-family="sans-serif" font-size="12" fill="#5C7278">Kepala Bidang Persandian</text>
+<rect x="106" y="62" width="126" height="52" rx="8" fill="#FFFFFF"/>
+<text x="114" y="80" font-family="sans-serif" font-size="10" fill="#5C7278">Pengumuman belum dibaca</text>
+<text x="114" y="102" font-family="sans-serif" font-size="18" font-weight="500" fill="#1F3A40">3</text>
+<rect x="240" y="62" width="126" height="52" rx="8" fill="#FFFFFF"/>
+<text x="248" y="80" font-family="sans-serif" font-size="10" fill="#5C7278">Kepatuhan pelatihan</text>
+<text x="248" y="102" font-family="sans-serif" font-size="18" font-weight="500" fill="#C9A15C">78%</text>
+<rect x="106" y="126" width="260" height="52" rx="8" fill="#FFFFFF"/>
+<text x="114" y="144" font-family="sans-serif" font-size="12" font-weight="500" fill="#1F3A40">Rapat bidang persandian</text>
+<text x="114" y="162" font-family="sans-serif" font-size="10" fill="#5C7278">Nota dinas &#183; Bidang Persandian</text>
+</svg>
