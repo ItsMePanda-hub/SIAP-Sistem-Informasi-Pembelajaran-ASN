@@ -32,12 +32,7 @@ class AnnouncementController extends Controller
     {
         $user = Auth::user();
 
-        abort_unless(
-            $user->isSystemWide()
-                || $announcement->target_unit_kerja === null
-                || $announcement->target_unit_kerja === $user->unit_kerja,
-            403
-        );
+        $this->authorize('view', $announcement);
 
         if ($user->role !== 'admin') {
             AnnouncementRead::updateOrCreate(
@@ -56,7 +51,7 @@ class AnnouncementController extends Controller
 
     public function create()
     {
-        $this->authorizeManage();
+        $this->authorize('create', Announcement::class);
 
         $unitKerjaList = User::whereNotNull('unit_kerja')->distinct()->pluck('unit_kerja');
 
@@ -66,7 +61,7 @@ class AnnouncementController extends Controller
     public function store(Request $request)
     {
         $user = Auth::user();
-        $this->authorizeManage();
+        $this->authorize('create', Announcement::class);
 
         $validated = $request->validate([
             'title' => 'required|string|max:255',
@@ -88,8 +83,5 @@ class AnnouncementController extends Controller
         return redirect()->route('announcements.index')->with('status', 'Pengumuman berhasil dikirim.');
     }
 
-    private function authorizeManage(): void
-    {
-        abort_unless(in_array(Auth::user()->role, ['atasan', 'pemilik', 'admin']), 403);
-    }
+
 }

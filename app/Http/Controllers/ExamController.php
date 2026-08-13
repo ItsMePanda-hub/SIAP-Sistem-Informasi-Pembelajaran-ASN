@@ -151,17 +151,12 @@ class ExamController extends Controller
 
     private function authorizeAccess(Exam $exam, $user): void
     {
-        abort_unless(
-            $user->isSystemWide()
-                || $exam->target_unit_kerja === null
-                || $exam->target_unit_kerja === $user->unit_kerja,
-            403
-        );
+        $this->authorize('view', $exam);
     }
 
     public function create()
     {
-        abort_unless(in_array(Auth::user()->role, ['atasan', 'pemilik', 'admin']), 403);
+        $this->authorize('create', Exam::class);
 
         $trainings = Training::all();
         $unitKerjaList = User::whereNotNull('unit_kerja')->distinct()->pluck('unit_kerja');
@@ -172,7 +167,7 @@ class ExamController extends Controller
     public function store(Request $request)
     {
         $user = Auth::user();
-        abort_unless(in_array($user->role, ['atasan', 'pemilik', 'admin']), 403);
+        $this->authorize('create', Exam::class);
 
         $validated = $request->validate([
             'title' => 'required|string|max:255',
@@ -227,7 +222,7 @@ class ExamController extends Controller
     public function results(Exam $exam)
     {
         $user = Auth::user();
-        abort_unless(in_array($user->role, ['atasan', 'pemilik', 'admin']), 403);
+        $this->authorize('create', Exam::class);
         $this->authorizeAccess($exam, $user);
 
         $attempts = $exam->attempts()->with(['user', 'answers.question', 'answers.option'])->get();
@@ -238,7 +233,7 @@ class ExamController extends Controller
     public function gradeEssay(Request $request, ExamAnswer $answer)
     {
         $user = Auth::user();
-        abort_unless(in_array($user->role, ['atasan', 'pemilik', 'admin']), 403);
+        $this->authorize('create', Exam::class);
 
         $validated = $request->validate([
             'is_correct' => 'required|boolean',

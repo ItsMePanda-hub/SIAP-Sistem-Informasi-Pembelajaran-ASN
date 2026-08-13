@@ -45,7 +45,7 @@ class LetterController extends Controller
     public function store(Request $request)
     {
         $user = Auth::user();
-        abort_unless(in_array($user->role, ['atasan', 'pemilik', 'admin']), 403);
+        $this->authorize('create', Letter::class);
 
         $validated = $request->validate([
             'title' => 'required|string|max:255',

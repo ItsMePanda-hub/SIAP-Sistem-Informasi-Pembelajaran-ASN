@@ -33,12 +33,7 @@ class TrainingController extends Controller
     {
         $user = Auth::user();
 
-        abort_unless(
-            $user->isSystemWide()
-                || $training->target_unit_kerja === null
-                || $training->target_unit_kerja === $user->unit_kerja,
-            403
-        );
+        $this->authorize('view', $training);
 
         $progress = $training->progressFor($user);
 
@@ -77,7 +72,7 @@ class TrainingController extends Controller
 
     public function create()
     {
-        abort_unless(in_array(Auth::user()->role, ['atasan', 'pemilik', 'admin']), 403);
+        $this->authorize('create', Training::class);
 
         $unitKerjaList = User::whereNotNull('unit_kerja')->distinct()->pluck('unit_kerja');
 
@@ -87,7 +82,7 @@ class TrainingController extends Controller
     public function store(Request $request)
     {
         $user = Auth::user();
-        abort_unless(in_array($user->role, ['atasan', 'pemilik', 'admin']), 403);
+        $this->authorize('create', Training::class);
 
         $validated = $request->validate([
             'title' => 'required|string|max:255',
