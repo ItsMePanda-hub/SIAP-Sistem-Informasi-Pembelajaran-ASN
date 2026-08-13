@@ -62,6 +62,11 @@ Route::middleware('auth')->group(function () {
     Route::get('/pengguna', [UserController::class, 'index'])->name('users.index');
     Route::get('/pengguna/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
     Route::put('/pengguna/{user}', [UserController::class, 'update'])->name('users.update');
+
+    // Chatbot SIAP
+    Route::post('/chatbot/tanya', [\App\Http\Controllers\ChatbotController::class, 'ask'])
+        ->middleware('throttle:20,1')
+        ->name('chatbot.ask');
 });
 
 require __DIR__.'/auth.php';

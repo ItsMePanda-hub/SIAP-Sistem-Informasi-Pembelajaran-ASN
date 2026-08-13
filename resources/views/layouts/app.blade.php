@@ -87,5 +87,10 @@
             </main>
         </div>
     </div>
+
+    {{-- Chatbot floating widget --}}
+    @auth
+        <x-chatbot-widget />
+    @endauth
 </body>
 </html>
