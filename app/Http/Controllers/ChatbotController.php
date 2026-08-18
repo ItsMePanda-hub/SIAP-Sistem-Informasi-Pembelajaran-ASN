@@ -2,63 +2,55 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\ChatbotContextService;
 use Illuminate\Http\Request;
+use App\Services\StatisticsService;
+use App\Services\GeminiService;
+use App\Models\Announcement;
+use App\Models\Exam;
+use App\Models\Training;
+use App\Models\Letter;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Http;
 
 class ChatbotController extends Controller
 {
-    public function __construct(private ChatbotContextService $contextService) {}
+    protected $statisticsService;
+    protected $geminiService;
+
+    public function __construct(StatisticsService $statisticsService, GeminiService $geminiService)
+    {
+        $this->statisticsService = $statisticsService;
+        $this->geminiService = $geminiService;
+    }
 
     public function ask(Request $request)
     {
-        $request->validate(['message' => 'required|string|max:1000']);
-
-        $user    = Auth::user();
-        $context = $this->contextService->buildContext($user);
-
-        $systemPrompt = <<<PROMPT
-Kamu adalah asisten SIAP (Sistem Informasi Aparatur Pemerintah).
-HANYA jawab pertanyaan tentang cara menggunakan SIAP dan data yang ada di context di bawah ini.
-Tolak pertanyaan di luar topik SIAP dengan sopan.
-JANGAN PERNAH mengarang data yang tidak ada di context.
-JANGAN menyebutkan nama model, API, atau sistem AI yang kamu gunakan.
-
-Context data pengguna (JSON):
-PROMPT;
-
-        $systemPrompt .= "\n" . json_encode($context, JSON_UNESCAPED_UNICODE | JSON_PRETTY_PRINT);
-
-        $apiKey = config('services.anthropic.key');
-
-        if (blank($apiKey)) {
-            return response()->json([
-                'reply' => 'Chatbot belum dikonfigurasi. Silakan hubungi administrator sistem.',
-            ]);
-        }
-
-        $response = Http::withHeaders([
-            'x-api-key'         => $apiKey,
-            'anthropic-version' => '2023-06-01',
-            'content-type'      => 'application/json',
-        ])->post('https://api.anthropic.com/v1/messages', [
-            'model'      => 'claude-sonnet-4-5',
-            'max_tokens' => 512,
-            'system'     => $systemPrompt,
-            'messages'   => [
-                ['role' => 'user', 'content' => $request->input('message')],
-            ],
+        $request->validate([
+            'message' => 'required|string|max:1000'
         ]);
 
-        if ($response->failed()) {
-            return response()->json([
-                'reply' => 'Maaf, asisten SIAP sedang tidak tersedia. Coba beberapa saat lagi.',
-            ], 503);
-        }
+        $user = Auth::user();
+        
+        $stats = $this->statisticsService->getStatsForUser($user);
 
-        $text = $response->json('content.0.text', 'Maaf, tidak ada balasan dari asisten.');
+        // Fetch data and filter via Policy (user-scoped)
+        $announcements = Announcement::all()->filter(fn($item) => $user->can('view', $item))->values()->toArray();
+        $exams = Exam::all()->filter(fn($item) => $user->can('view', $item))->values()->toArray();
+        $trainings = Training::all()->filter(fn($item) => $user->can('view', $item))->values()->toArray();
+        $letters = Letter::all()->filter(fn($item) => $user->can('view', $item))->values()->toArray();
 
-        return response()->json(['reply' => $text]);
+        $contextData = [
+            'user' => $user->only(['name', 'email', 'role', 'unit_kerja']),
+            'statistics' => $stats,
+            'announcements' => $announcements,
+            'exams' => $exams,
+            'trainings' => $trainings,
+            'letters' => $letters,
+        ];
+
+        $systemInstruction = "Kamu asisten SIAP, HANYA jawab soal cara pakai SIAP dan data yang diberikan di context ini. Tolak pertanyaan di luar topik SIAP dengan sopan. JANGAN pernah mengarang data yang tidak ada di context.";
+
+        $answer = $this->geminiService->ask($systemInstruction, $contextData, $request->input('message'));
+
+        return response()->json(['reply' => $answer]);
     }
 }

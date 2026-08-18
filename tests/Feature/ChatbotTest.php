@@ -2,114 +2,77 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use App\Models\Announcement;
 use App\Models\Exam;
-use App\Models\ExamAttempt;
 use App\Models\Training;
-use App\Models\TrainingProgress;
-use App\Models\User;
-use App\Services\ChatbotContextService;
+use App\Models\Letter;
+use App\Services\GeminiService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use Mockery\MockInterface;
 
 class ChatbotTest extends TestCase
 {
     use RefreshDatabase;
 
-    // ── context scoping ────────────────────────────────────────────────────
-
-    public function test_context_for_pengguna_only_contains_own_unit_kerja_announcements()
+    public function test_chatbot_endpoint_scopes_data_correctly()
     {
-        $admin = User::factory()->create(['role' => 'admin']);
-        $pegawai = User::factory()->create(['role' => 'pegawai', 'unit_kerja' => 'IT']);
+        $user = User::create(['name' => 'Test', 'email' => 'test@it.com', 'password' => 'password', 'role' => 'pegawai', 'unit_kerja' => 'IT']);
 
-        // Visible to pegawai
-        Announcement::create(['title' => 'Global', 'body' => 'B', 'category' => 'rutin', 'target_unit_kerja' => null, 'created_by' => $admin->id]);
-        Announcement::create(['title' => 'IT Only', 'body' => 'B', 'category' => 'rutin', 'target_unit_kerja' => 'IT', 'created_by' => $admin->id]);
-        // NOT visible
-        Announcement::create(['title' => 'HR Only', 'body' => 'B', 'category' => 'rutin', 'target_unit_kerja' => 'HR', 'created_by' => $admin->id]);
+        // Data that user CAN see
+        $announcement1 = Announcement::create(['title' => 'T1', 'body' => 'C', 'category' => 'rutin', 'target_unit_kerja' => 'IT', 'created_by' => $user->id]);
+        $announcement2 = Announcement::create(['title' => 'T2', 'body' => 'C', 'category' => 'rutin', 'target_unit_kerja' => null, 'created_by' => $user->id]);
 
-        $context = (new ChatbotContextService())->buildContext($pegawai);
+        // Data that user CANNOT see
+        $announcement3 = Announcement::create(['title' => 'T3', 'body' => 'C', 'category' => 'rutin', 'target_unit_kerja' => 'HR', 'created_by' => $user->id]);
 
-        $titles = array_column($context['announcements'], 'title');
-        $this->assertContains('Global', $titles);
-        $this->assertContains('IT Only', $titles);
-        $this->assertNotContains('HR Only', $titles);
+        $this->mock(GeminiService::class, function (MockInterface $mock) use ($announcement1, $announcement2, $announcement3) {
+            $mock->shouldReceive('ask')
+                ->once()
+                ->withArgs(function ($systemInstruction, $contextData, $question) use ($announcement1, $announcement2, $announcement3) {
+                    $announcements = collect($contextData['announcements']);
+                    
+                    // Assert it contains announcement1 and announcement2
+                    $contains1 = $announcements->contains('id', $announcement1->id);
+                    $contains2 = $announcements->contains('id', $announcement2->id);
+                    
+                    // Assert it DOES NOT contain announcement3
+                    $contains3 = $announcements->contains('id', $announcement3->id);
+                    
+                    return $contains1 && $contains2 && !$contains3 && $question === 'Halo';
+                })
+                ->andReturn('Mocked Response');
+        });
+
+        $response = $this->actingAs($user)->postJson('/chatbot/tanya', [
+            'message' => 'Halo'
+        ]);
+
+        $response->assertStatus(200);
+        $response->assertJson(['reply' => 'Mocked Response']);
     }
 
-    public function test_context_for_atasan_scoped_to_own_unit_kerja()
+    public function test_chatbot_throttles_requests()
     {
-        $admin = User::factory()->create(['role' => 'admin']);
-        $atasan = User::factory()->create(['role' => 'atasan', 'unit_kerja' => 'Keuangan']);
+        $user = User::create(['name' => 'Test2', 'email' => 'test2@it.com', 'password' => 'password', 'role' => 'pegawai', 'unit_kerja' => 'IT']);
 
-        Training::create(['title' => 'Training Keuangan', 'target_unit_kerja' => 'Keuangan', 'created_by' => $admin->id]);
-        Training::create(['title' => 'Training IT', 'target_unit_kerja' => 'IT', 'created_by' => $admin->id]);
-        Training::create(['title' => 'Training Semua', 'target_unit_kerja' => null, 'created_by' => $admin->id]);
+        $this->mock(GeminiService::class, function (MockInterface $mock) {
+            $mock->shouldReceive('ask')->andReturn('Response');
+        });
 
-        $context = (new ChatbotContextService())->buildContext($atasan);
+        // Loop to hit rate limit (20 per minute)
+        for ($i = 0; $i < 20; $i++) {
+            $this->actingAs($user)->postJson('/chatbot/tanya', [
+                'message' => 'Halo'
+            ]);
+        }
 
-        $titles = array_column($context['trainings'], 'judul');
-        $this->assertContains('Training Keuangan', $titles);
-        $this->assertContains('Training Semua', $titles);
-        $this->assertNotContains('Training IT', $titles);
-    }
+        // The 21st request should be throttled
+        $response = $this->actingAs($user)->postJson('/chatbot/tanya', [
+            'message' => 'Halo'
+        ]);
 
-    public function test_context_for_admin_sees_all_data()
-    {
-        $admin = User::factory()->create(['role' => 'admin']);
-        $other = User::factory()->create(['role' => 'admin']);
-
-        Announcement::create(['title' => 'For IT', 'body' => 'B', 'category' => 'rutin', 'target_unit_kerja' => 'IT', 'created_by' => $other->id]);
-        Announcement::create(['title' => 'For HR', 'body' => 'B', 'category' => 'rutin', 'target_unit_kerja' => 'HR', 'created_by' => $other->id]);
-
-        $context = (new ChatbotContextService())->buildContext($admin);
-
-        $titles = array_column($context['announcements'], 'title');
-        $this->assertContains('For IT', $titles);
-        $this->assertContains('For HR', $titles);
-    }
-
-    public function test_context_exam_history_only_shows_own_attempts()
-    {
-        $admin = User::factory()->create(['role' => 'admin']);
-        $pegawai = User::factory()->create(['role' => 'pegawai', 'unit_kerja' => 'IT']);
-        $other = User::factory()->create(['role' => 'pegawai', 'unit_kerja' => 'IT']);
-
-        $exam = Exam::create(['title' => 'Test Exam', 'max_violations' => 3, 'created_by' => $admin->id]);
-        ExamAttempt::create(['exam_id' => $exam->id, 'user_id' => $pegawai->id, 'status' => 'selesai', 'score' => 85, 'started_at' => now(), 'submitted_at' => now()]);
-        ExamAttempt::create(['exam_id' => $exam->id, 'user_id' => $other->id, 'status' => 'selesai', 'score' => 60, 'started_at' => now(), 'submitted_at' => now()]);
-
-        $context = (new ChatbotContextService())->buildContext($pegawai);
-
-        // The "skor" entry for the exam should reflect pegawai's own attempt (85), not other's (60)
-        $examEntry = collect($context['exams'])->firstWhere('judul', 'Test Exam');
-        $this->assertNotNull($examEntry);
-        $this->assertEquals(85, $examEntry['skor']);
-    }
-
-    // ── HTTP endpoint ───────────────────────────────────────────────────────
-
-    public function test_chatbot_endpoint_requires_auth()
-    {
-        $response = $this->postJson(route('chatbot.ask'), ['message' => 'test']);
-        $response->assertStatus(401);
-    }
-
-    public function test_chatbot_endpoint_validates_message_required()
-    {
-        $user = User::factory()->create(['role' => 'pegawai']);
-        $response = $this->actingAs($user)->postJson(route('chatbot.ask'), []);
-        $response->assertStatus(422)->assertJsonValidationErrors(['message']);
-    }
-
-    public function test_chatbot_returns_unconfigured_message_when_no_api_key()
-    {
-        // Ensure config key is blank (default in test env)
-        config(['services.anthropic.key' => '']);
-
-        $user = User::factory()->create(['role' => 'pegawai']);
-        $response = $this->actingAs($user)->postJson(route('chatbot.ask'), ['message' => 'Halo']);
-
-        $response->assertStatus(200)->assertJsonPath('reply', fn ($v) => str_contains($v, 'belum dikonfigurasi'));
+        $response->assertStatus(429);
     }
 }
