@@ -54,7 +54,7 @@ class LetterController extends Controller
             'file' => 'required|file|mimes:pdf|max:10240',
             'visibility' => 'required|in:all,unit,role',
             'target_unit_kerja' => 'nullable|string',
-            'target_role' => 'nullable|in:admin,pemilik,atasan,pengguna',
+            'target_role' => 'nullable|in:admin,pemilik,atasan,pegawai',
         ]);
 
         if ($validated['visibility'] === 'unit' && empty($validated['target_unit_kerja'])) {

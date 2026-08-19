@@ -40,7 +40,7 @@
                         <option value="admin">Admin</option>
                         <option value="pemilik">Pemilik</option>
                         <option value="atasan">Atasan</option>
-                        <option value="pengguna">Pengguna</option>
+                        <option value="pegawai">Pegawai</option>
                     </select>
 
                     <input type="file" name="file" accept="application/pdf" class="mb-4" required>

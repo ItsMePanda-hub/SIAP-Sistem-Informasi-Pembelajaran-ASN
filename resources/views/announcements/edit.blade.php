@@ -94,7 +94,7 @@
                                 <option value="admin" {{ old('target_role', $announcement->target_role) === 'admin' ? 'selected' : '' }}>Admin</option>
                                 <option value="pemilik" {{ old('target_role', $announcement->target_role) === 'pemilik' ? 'selected' : '' }}>Pemilik</option>
                                 <option value="atasan" {{ old('target_role', $announcement->target_role) === 'atasan' ? 'selected' : '' }}>Atasan</option>
-                                <option value="pengguna" {{ old('target_role', $announcement->target_role) === 'pengguna' ? 'selected' : '' }}>Pengguna</option>
+                                <option value="pegawai" {{ old('target_role', $announcement->target_role) === 'pegawai' ? 'selected' : '' }}>Pegawai</option>
                             </select>
                         </div>
                     </div>
