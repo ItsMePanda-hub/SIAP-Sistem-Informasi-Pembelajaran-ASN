@@ -35,4 +35,8 @@ return [
         'key' => env('ANTHROPIC_API_KEY'),
     ],
 
+    'chatbot' => [
+        'log_retention_days' => env('CHATBOT_LOG_RETENTION_DAYS', 90),
+    ],
+
 ];
