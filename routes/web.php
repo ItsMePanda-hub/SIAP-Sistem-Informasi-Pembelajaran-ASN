@@ -65,7 +65,7 @@ Route::middleware('auth')->group(function () {
 
     // Chatbot SIAP
     Route::post('/chatbot/tanya', [\App\Http\Controllers\ChatbotController::class, 'ask'])
-        ->middleware('throttle:20,1')
+        ->middleware(['throttle:10,1', 'throttle:50,1440'])
         ->name('chatbot.ask');
 });
 

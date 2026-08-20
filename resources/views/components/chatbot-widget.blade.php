@@ -97,6 +97,7 @@
                         :class="msg.role === 'user'
                             ? 'bg-teal-600 text-white text-xs rounded-xl rounded-tr-none px-3 py-2 max-w-[80%]'
                             : 'bg-white border border-gray-100 text-gray-700 text-xs rounded-xl rounded-tl-none px-3 py-2 max-w-[80%] shadow-sm'"
+                        :style="msg.role === 'bot' ? 'white-space: pre-line' : ''"
                         x-text="msg.text"
                     ></div>
                 </div>
