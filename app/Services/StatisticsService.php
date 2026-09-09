@@ -76,13 +76,16 @@ class StatisticsService
         }
 
         // Tentukan roster berdasarkan role
-        $query = User::whereIn('role', ['pegawai', 'pengguna']);
-
         if ($user->role === 'atasan') {
             // Atasan hanya boleh melihat pegawai di unit_kerja yang sama
-            $query->where('unit_kerja', $user->unit_kerja);
+            $query = User::with('atasan')
+                ->whereIn('role', ['pegawai', 'pengguna'])
+                ->where('unit_kerja', $user->unit_kerja);
+        } else {
+            // admin / pemilik: melihat atasan dan pegawai lintas unit
+            $query = User::with('atasan')
+                ->whereIn('role', ['atasan', 'pegawai', 'pengguna']);
         }
-        // admin / pemilik: tidak ada filter tambahan → semua pegawai lintas unit
 
         $pegawaiList = $query->get();
 
@@ -116,6 +119,7 @@ class StatisticsService
                 'name'                      => $p->name,
                 'unit_kerja'                => $p->unit_kerja,
                 'role'                      => $p->role,
+                'atasan_name'               => $p->atasan?->name,
                 'exam_completed'            => $examCompleted,
                 'training_progress_percent' => $trainingPercent,
                 'announcement_unread_count' => $unreadCount,
