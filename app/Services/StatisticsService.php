@@ -68,6 +68,63 @@ class StatisticsService
         ];
     }
 
+    public function getTeamOverviewForUser(User $user): array
+    {
+        // Pegawai tidak boleh mendapat data pegawai lain sama sekali
+        if ($user->role === 'pegawai' || $user->role === 'pengguna') {
+            return [];
+        }
+
+        // Tentukan roster berdasarkan role
+        $query = User::whereIn('role', ['pegawai', 'pengguna']);
+
+        if ($user->role === 'atasan') {
+            // Atasan hanya boleh melihat pegawai di unit_kerja yang sama
+            $query->where('unit_kerja', $user->unit_kerja);
+        }
+        // admin / pemilik: tidak ada filter tambahan → semua pegawai lintas unit
+
+        $pegawaiList = $query->get();
+
+        $roster = [];
+        foreach ($pegawaiList as $p) {
+            // exam_completed: true jika ada setidaknya 1 ExamAttempt dengan score tidak null
+            $examCompleted = ExamAttempt::where('user_id', $p->id)
+                ->whereNotNull('score')
+                ->exists();
+
+            // training_progress_percent
+            $totalTrainings = Training::whereNull('target_unit_kerja')
+                ->orWhere('target_unit_kerja', $p->unit_kerja)
+                ->count();
+            $completedTrainings = TrainingProgress::where('user_id', $p->id)
+                ->where('status', 'selesai')
+                ->count();
+            $trainingPercent = $totalTrainings > 0
+                ? round(($completedTrainings / $totalTrainings) * 100, 2)
+                : 100;
+
+            // announcement_unread_count
+            $totalAnnouncements = Announcement::whereNull('target_unit_kerja')
+                ->orWhere('target_unit_kerja', $p->unit_kerja)
+                ->count();
+            $readCount = AnnouncementRead::where('user_id', $p->id)->count();
+            $unreadCount = max(0, $totalAnnouncements - $readCount);
+
+            // HANYA field aman — TIDAK PERNAH menyertakan email, nip, password, dst.
+            $roster[] = [
+                'name'                      => $p->name,
+                'unit_kerja'                => $p->unit_kerja,
+                'role'                      => $p->role,
+                'exam_completed'            => $examCompleted,
+                'training_progress_percent' => $trainingPercent,
+                'announcement_unread_count' => $unreadCount,
+            ];
+        }
+
+        return $roster;
+    }
+
     private function getPegawaiStats(User $user)
     {
         // Unread Announcements
