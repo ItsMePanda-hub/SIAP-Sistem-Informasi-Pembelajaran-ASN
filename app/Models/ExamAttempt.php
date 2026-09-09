@@ -9,6 +9,7 @@ class ExamAttempt extends Model
     protected $fillable = [
         'exam_id', 'user_id', 'status', 'violation_count',
         'score', 'started_at', 'submitted_at',
+        'violation_appeal_status', 'violation_appeal_note',
     ];
 
     protected $casts = [

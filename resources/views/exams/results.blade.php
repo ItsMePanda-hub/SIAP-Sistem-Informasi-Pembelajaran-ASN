@@ -49,6 +49,24 @@
                             @endforeach
                         </div>
                     @endif
+
+                    @if ($attempt->violation_appeal_status === 'diajukan')
+                        <div class="mt-4 bg-orange-50 rounded-lg p-3 border border-orange-100 flex justify-between items-center">
+                            <div>
+                                <div class="text-xs font-semibold text-orange-800">Banding diajukan:</div>
+                                <div class="text-sm text-orange-700 italic">"{{ $attempt->violation_appeal_note }}"</div>
+                            </div>
+                            <form method="POST" action="{{ route('exams.resolve-appeal', $attempt) }}" class="flex gap-2">
+                                @csrf
+                                <button name="action" value="terima" class="px-2 py-1 bg-green-600 text-white text-xs rounded hover:bg-green-700">Terima</button>
+                                <button name="action" value="tolak" class="px-2 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700">Tolak</button>
+                            </form>
+                        </div>
+                    @elseif ($attempt->violation_appeal_status)
+                        <div class="mt-4 bg-gray-50 rounded-lg p-3 text-xs text-gray-500">
+                            Banding <span class="font-semibold">{{ $attempt->violation_appeal_status }}</span>: "{{ $attempt->violation_appeal_note }}"
+                        </div>
+                    @endif
                 </div>
             @empty
                 <p class="text-gray-400 text-sm p-5">Belum ada yang mengerjakan ujian ini.</p>

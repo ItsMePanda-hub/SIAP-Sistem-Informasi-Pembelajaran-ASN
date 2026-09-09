@@ -273,4 +273,56 @@ class ExamController extends Controller
 
         return back()->with('status', 'Penilaian esai tersimpan.');
     }
+
+    public function appealViolation(Request $request, Exam $exam)
+    {
+        $user = Auth::user();
+        $attempt = $exam->attemptFor($user);
+
+        abort_unless($attempt && $attempt->status === 'selesai_pelanggaran' && $attempt->violation_appeal_status === null, 403);
+
+        $validated = $request->validate([
+            'note' => 'required|string|max:1000',
+        ]);
+
+        $attempt->update([
+            'violation_appeal_status' => 'diajukan',
+            'violation_appeal_note' => $validated['note'],
+        ]);
+
+        return back()->with('status', 'Banding pelanggaran berhasil diajukan.');
+    }
+
+    public function resolveAppeal(Request $request, ExamAttempt $attempt)
+    {
+        $user = Auth::user();
+        $this->authorize('create', Exam::class);
+        $this->authorizeAccess($attempt->exam, $user);
+
+        $validated = $request->validate([
+            'action' => 'required|in:terima,tolak',
+        ]);
+
+        if ($validated['action'] === 'terima') {
+            // Delete old answers
+            \App\Models\ExamAnswer::where('exam_attempt_id', $attempt->id)->delete();
+            
+            $attempt->update([
+                'violation_appeal_status' => 'diterima',
+                'status' => 'sedang_berjalan',
+                'score' => null,
+                'violation_count' => 0,
+                'started_at' => now(),
+                'submitted_at' => null,
+            ]);
+            $statusMsg = 'Banding diterima. Peserta dapat mengulang ujian.';
+        } else {
+            $attempt->update([
+                'violation_appeal_status' => 'ditolak',
+            ]);
+            $statusMsg = 'Banding ditolak.';
+        }
+
+        return back()->with('status', $statusMsg);
+    }
 }

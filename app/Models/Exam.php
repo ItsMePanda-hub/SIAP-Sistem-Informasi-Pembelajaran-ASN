@@ -33,6 +33,6 @@ class Exam extends Model
 
     public function attemptFor(User $user)
     {
-        return $this->attempts()->where('user_id', $user->id)->first();
+        return $this->attempts()->where('user_id', $user->id)->latest('id')->first();
     }
 }

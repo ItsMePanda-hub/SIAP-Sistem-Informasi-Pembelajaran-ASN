@@ -57,6 +57,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/ujian/{exam}/kumpulkan', [ExamController::class, 'submit'])->name('exams.submit');
     Route::get('/ujian/{exam}/hasil', [ExamController::class, 'results'])->name('exams.results');
     Route::post('/jawaban-esai/{answer}/nilai', [ExamController::class, 'gradeEssay'])->name('exams.grade-essay');
+    Route::post('/ujian/{exam}/banding', [ExamController::class, 'appealViolation'])->name('exams.appeal');
+    Route::post('/ujian-attempt/{attempt}/resolve-banding', [ExamController::class, 'resolveAppeal'])->name('exams.resolve-appeal');
 
     // Kelola Pengguna (admin)
     Route::get('/pengguna', [UserController::class, 'index'])->name('users.index');

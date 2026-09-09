@@ -85,8 +85,8 @@ class ExamTest extends TestCase
         $this->actingAs($pegawai)->post(route('exams.submit', $exam));
 
         $attempt->refresh();
-        $this->assertEquals('selesai', $attempt->status);
-        $this->assertEquals(100.00, (float) $attempt->score); // MC is 100% correct
+        $this->assertEquals('menunggu_penilaian_esai', $attempt->status);
+        $this->assertEquals(50.00, (float) $attempt->score); // MC is 1, Essay ungraded (0) = 50%
         
         // Manual grade essay
         $essayAnswer = $attempt->answers()->where('exam_question_id', $essayQuestion->id)->first();
@@ -96,6 +96,76 @@ class ExamTest extends TestCase
             'is_correct' => true,
         ]);
 
-        $this->assertTrue((bool) $essayAnswer->fresh()->essay_graded_correct);
+        $essayAnswer->refresh();
+        $attempt->refresh();
+        $this->assertTrue((bool) $essayAnswer->essay_graded_correct);
+        $this->assertEquals('selesai', $attempt->status);
+        $this->assertEquals(100.00, (float) $attempt->score);
+    }
+
+    public function test_appeal_violation_flow()
+    {
+        $pegawai1 = User::factory()->create(['role' => 'pegawai']);
+        $pegawai2 = User::factory()->create(['role' => 'pegawai']);
+        $admin = User::factory()->create(['role' => 'admin']);
+
+        $exam = Exam::create([
+            'title' => 'Appeal Test',
+            'max_violations' => 1,
+            'created_by' => $admin->id,
+        ]);
+
+        $attempt = ExamAttempt::create([
+            'exam_id' => $exam->id,
+            'user_id' => $pegawai1->id,
+            'status' => 'selesai_pelanggaran',
+            'started_at' => now(),
+        ]);
+
+        // assert pegawai lain tidak bisa ajukan banding
+        $this->actingAs($pegawai2)
+             ->post(route('exams.appeal', $exam), ['note' => 'Bukan ujian saya'])
+             ->assertForbidden();
+
+        // assert pegawai bisa ajukan banding
+        $this->actingAs($pegawai1)
+             ->post(route('exams.appeal', $exam), ['note' => 'Listrik mati'])
+             ->assertRedirect();
+        
+        $attempt->refresh();
+        $this->assertEquals('diajukan', $attempt->violation_appeal_status);
+
+        // admin tolak banding
+        $this->actingAs($admin)
+             ->post(route('exams.resolve-appeal', $attempt), ['action' => 'tolak'])
+             ->assertRedirect();
+        
+        $attempt->refresh();
+        $this->assertEquals('ditolak', $attempt->violation_appeal_status);
+        $this->assertEquals('selesai_pelanggaran', $attempt->status);
+
+        // pegawai ajukan lagi tidak bisa karena status bukan null
+        $this->actingAs($pegawai1)
+             ->post(route('exams.appeal', $exam), ['note' => 'Tolong dong'])
+             ->assertForbidden();
+
+        // set back to diajukan for test 'terima'
+        $attempt->update(['violation_appeal_status' => 'diajukan']);
+        
+        // admin terima banding
+        $this->actingAs($admin)
+             ->post(route('exams.resolve-appeal', $attempt), ['action' => 'terima'])
+             ->assertRedirect();
+             
+        $attempt->refresh();
+        $this->assertEquals('diterima', $attempt->violation_appeal_status);
+        $this->assertEquals('sedang_berjalan', $attempt->status);
+        $this->assertEquals(0, $attempt->violation_count);
+        $this->assertNull($attempt->score);
+        
+        // pegawai mengerjakan ulang
+        $this->actingAs($pegawai1)
+             ->post(route('exams.start', $exam))
+             ->assertRedirect(route('exams.take', $exam));
     }
 }
