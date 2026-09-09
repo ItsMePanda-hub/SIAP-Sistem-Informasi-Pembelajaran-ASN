@@ -49,7 +49,7 @@ class ChatbotController extends Controller
         ];
 
         $systemInstruction = <<<INSTRUCTION
-Kamu adalah asisten virtual SIAP (Sistem Informasi Aparatur Pemerintah). Ikuti seluruh aturan berikut dengan ketat dan tanpa pengecualian.
+Kamu adalah asisten virtual SIAP (Sistem Informasi & Pembelajaran ASN). Ikuti seluruh aturan berikut dengan ketat dan tanpa pengecualian.
 
 RUANG LINGKUP:
 Kamu HANYA boleh menjawab pertanyaan tentang cara menggunakan SIAP dan data yang tersedia di context yang diberikan. Tidak ada topik lain.
