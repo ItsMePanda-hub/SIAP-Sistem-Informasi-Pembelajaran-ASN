@@ -124,10 +124,13 @@ class ExamController extends Controller
         return redirect()->route('exams.show', $exam)->with('status', 'Ujian berhasil dikumpulkan.');
     }
 
-    private function finishAttempt(ExamAttempt $attempt, string $status): void
+    private function finishAttempt(ExamAttempt $attempt, string $status = null): void
     {
         $exam = $attempt->exam;
         $pgQuestions = $exam->questions()->where('type', 'pilihan_ganda')->get();
+        $essayQuestions = $exam->questions()->where('type', 'esai')->get();
+        
+        $totalQuestions = $pgQuestions->count() + $essayQuestions->count();
 
         $benar = 0;
         foreach ($pgQuestions as $q) {
@@ -140,12 +143,37 @@ class ExamController extends Controller
             }
         }
 
-        $score = $pgQuestions->count() > 0 ? round(($benar / $pgQuestions->count()) * 100, 2) : null;
+        $ungradedEssays = 0;
+        foreach ($essayQuestions as $q) {
+            $answer = ExamAnswer::where('exam_attempt_id', $attempt->id)
+                ->where('exam_question_id', $q->id)
+                ->first();
+
+            if ($answer && $answer->essay_graded_correct !== null) {
+                if ($answer->essay_graded_correct) {
+                    $benar++;
+                }
+            } else {
+                $ungradedEssays++;
+            }
+        }
+
+        $score = $totalQuestions > 0 ? round(($benar / $totalQuestions) * 100, 2) : null;
+
+        if ($ungradedEssays > 0) {
+            $finalStatus = 'menunggu_penilaian_esai';
+        } else {
+            if ($status) {
+                $finalStatus = $status;
+            } else {
+                $finalStatus = $attempt->violation_count >= $exam->max_violations ? 'selesai_pelanggaran' : 'selesai';
+            }
+        }
 
         $attempt->update([
-            'status' => $status,
+            'status' => $finalStatus,
             'score' => $score,
-            'submitted_at' => now(),
+            'submitted_at' => $attempt->submitted_at ?? now(),
         ]);
     }
 
@@ -240,6 +268,8 @@ class ExamController extends Controller
         ]);
 
         $answer->update(['essay_graded_correct' => $validated['is_correct']]);
+
+        $this->finishAttempt($answer->attempt);
 
         return back()->with('status', 'Penilaian esai tersimpan.');
     }

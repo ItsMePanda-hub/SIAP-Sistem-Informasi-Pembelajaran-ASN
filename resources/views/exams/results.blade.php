@@ -13,17 +13,21 @@
                             <div class="text-xs text-gray-400">
                                 Status:
                                 <span class="{{ $attempt->status === 'selesai_pelanggaran' ? 'text-orange-600 font-medium' : '' }}">
-                                    {{ ['sedang_berjalan' => 'Sedang mengerjakan', 'selesai' => 'Selesai', 'selesai_pelanggaran' => 'Selesai (pelanggaran)'][$attempt->status] }}
+                                    {{ ['sedang_berjalan' => 'Sedang mengerjakan', 'selesai' => 'Selesai', 'selesai_pelanggaran' => 'Selesai (pelanggaran)', 'menunggu_penilaian_esai' => 'Menunggu penilaian esai'][$attempt->status] ?? $attempt->status }}
                                 </span>
                                 @if ($attempt->violation_count > 0)
                                     &middot; {{ $attempt->violation_count }} peringatan
                                 @endif
                             </div>
                         </div>
-                        @if ($attempt->score !== null)
+                        @if ($attempt->score !== null && $attempt->status !== 'menunggu_penilaian_esai')
                             <div class="text-right">
                                 <div class="text-lg font-semibold text-primary-dark">{{ $attempt->score }}</div>
-                                <div class="text-[11px] text-gray-400">skor pilihan ganda</div>
+                                <div class="text-[11px] text-gray-400">skor akhir</div>
+                            </div>
+                        @elseif ($attempt->status === 'menunggu_penilaian_esai')
+                            <div class="text-right">
+                                <div class="text-[11px] text-gray-400">menunggu dinilai</div>
                             </div>
                         @endif
                     </div>

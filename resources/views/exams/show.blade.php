@@ -36,7 +36,13 @@
             @else
                 <div class="bg-green-50 border border-green-100 rounded-lg p-4">
                     <div class="text-green-700 font-semibold text-sm mb-1">
-                        {{ $attempt->status === 'selesai_pelanggaran' ? 'Ujian dikumpulkan otomatis (pelanggaran)' : 'Ujian selesai' }}
+                        @if ($attempt->status === 'selesai_pelanggaran')
+                            Ujian dikumpulkan otomatis (pelanggaran)
+                        @elseif ($attempt->status === 'menunggu_penilaian_esai')
+                            Menunggu penilaian esai
+                        @else
+                            Ujian selesai
+                        @endif
                     </div>
                     <div class="text-xs text-gray-500">
                         Dikumpulkan {{ $attempt->submitted_at?->translatedFormat('d M Y, H:i') }}
@@ -44,10 +50,11 @@
                             &middot; {{ $attempt->violation_count }} peringatan tercatat
                         @endif
                     </div>
-                    @if ($attempt->score !== null)
-                        <div class="text-xs text-gray-500 mt-1">Skor pilihan ganda: <strong>{{ $attempt->score }}</strong></div>
+                    @if ($attempt->status === 'menunggu_penilaian_esai')
+                        <div class="text-xs text-gray-500 mt-1">Skor akhir akan muncul setelah atasan menilai jawaban esai Anda.</div>
+                    @elseif ($attempt->score !== null)
+                        <div class="text-xs text-gray-500 mt-1">Skor akhir: <strong>{{ $attempt->score }}</strong></div>
                     @endif
-                    <div class="text-xs text-gray-400 mt-1">Jawaban esai (jika ada) menunggu penilaian manual dari atasan.</div>
                 </div>
             @endif
         </div>
