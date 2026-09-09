@@ -27,6 +27,12 @@
                    class="block px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('dashboard') ? 'bg-primary text-white' : 'text-gray-500 hover:bg-primary-light hover:text-primary-dark' }}">
                     Dashboard
                 </a>
+                @if (in_array(auth()->user()->role, ['admin', 'pemilik', 'atasan']))
+                <a href="{{ route('team.index') }}"
+                   class="block px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('team.*') ? 'bg-primary text-white' : 'text-gray-500 hover:bg-primary-light hover:text-primary-dark' }}">
+                    Tim Saya
+                </a>
+                @endif
                 <a href="{{ route('announcements.index') }}"
                    class="block px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('announcements.*') ? 'bg-primary text-white' : 'text-gray-500 hover:bg-primary-light hover:text-primary-dark' }}">
                     Pengumuman
@@ -43,7 +49,7 @@
                    class="block px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('exams.*') ? 'bg-primary text-white' : 'text-gray-500 hover:bg-primary-light hover:text-primary-dark' }}">
                     Ujian
                 </a>
-                @if (auth()->user()->role === 'admin')
+                @if (in_array(auth()->user()->role, ['admin', 'pemilik']))
                 <a href="{{ route('users.index') }}"
                    class="block px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('users.*') ? 'bg-primary text-white' : 'text-gray-500 hover:bg-primary-light hover:text-primary-dark' }}">
                     Kelola Pengguna

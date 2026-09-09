@@ -10,7 +10,7 @@ class UserController extends Controller
 {
     public function index()
     {
-        abort_unless(Auth::user()->role === 'admin', 403);
+        abort_unless(in_array(Auth::user()->role, ['admin', 'pemilik']), 403);
 
         $users = User::orderBy('name')->get();
 

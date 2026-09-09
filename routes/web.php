@@ -26,6 +26,9 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    // Tim Saya
+    Route::get('/tim-saya', [\App\Http\Controllers\TeamController::class, 'index'])->name('team.index');
+
     // Pengumuman
     Route::get('/pengumuman', [AnnouncementController::class, 'index'])->name('announcements.index');
     Route::get('/pengumuman/buat', [AnnouncementController::class, 'create'])->name('announcements.create');
