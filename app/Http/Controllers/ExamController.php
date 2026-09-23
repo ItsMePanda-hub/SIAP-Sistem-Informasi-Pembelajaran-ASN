@@ -44,10 +44,16 @@ class ExamController extends Controller
         $user = Auth::user();
         $this->authorizeAccess($exam, $user);
 
-        $attempt = ExamAttempt::firstOrCreate(
-            ['exam_id' => $exam->id, 'user_id' => $user->id],
-            ['status' => 'sedang_berjalan', 'started_at' => now()]
-        );
+        $attempt = $exam->attemptFor($user);
+
+        if (! $attempt) {
+            $attempt = ExamAttempt::create([
+                'exam_id' => $exam->id,
+                'user_id' => $user->id,
+                'status' => 'sedang_berjalan',
+                'started_at' => now(),
+            ]);
+        }
 
         if ($attempt->status !== 'sedang_berjalan') {
             return redirect()->route('exams.show', $exam)->with('status', 'Ujian ini sudah pernah dikerjakan.');
@@ -304,16 +310,17 @@ class ExamController extends Controller
         ]);
 
         if ($validated['action'] === 'terima') {
-            // Delete old answers
-            \App\Models\ExamAnswer::where('exam_attempt_id', $attempt->id)->delete();
-            
             $attempt->update([
                 'violation_appeal_status' => 'diterima',
+                'status' => 'diganti_banding',
+            ]);
+            \App\Models\ExamAttempt::create([
+                'exam_id' => $attempt->exam_id,
+                'user_id' => $attempt->user_id,
                 'status' => 'sedang_berjalan',
+                'started_at' => now(),
                 'score' => null,
                 'violation_count' => 0,
-                'started_at' => now(),
-                'submitted_at' => null,
             ]);
             $statusMsg = 'Banding diterima. Peserta dapat mengulang ujian.';
         } else {

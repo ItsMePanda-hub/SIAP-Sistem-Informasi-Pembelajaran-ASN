@@ -12,13 +12,12 @@ return new class extends Migration
             $table->id();
             $table->foreignId('exam_id')->constrained()->cascadeOnDelete();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->enum('status', ['sedang_berjalan', 'selesai', 'selesai_pelanggaran'])->default('sedang_berjalan');
+            $table->enum('status', ['sedang_berjalan', 'selesai', 'selesai_pelanggaran', 'menunggu_penilaian_esai', 'diganti_banding'])->default('sedang_berjalan');
             $table->unsignedTinyInteger('violation_count')->default(0);
             $table->decimal('score', 5, 2)->nullable();
             $table->timestamp('started_at')->nullable();
             $table->timestamp('submitted_at')->nullable();
             $table->timestamps();
-            $table->unique(['exam_id', 'user_id']);
         });
     }
 

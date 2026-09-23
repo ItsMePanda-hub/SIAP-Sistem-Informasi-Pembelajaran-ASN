@@ -149,21 +149,29 @@ class ExamTest extends TestCase
              ->post(route('exams.appeal', $exam), ['note' => 'Tolong dong'])
              ->assertForbidden();
 
-        // set back to diajukan for test 'terima'
+        // set back to diajukan for test 'terima' + add answer to prove not deleted
+        $q = \App\Models\ExamQuestion::create(['exam_id' => $exam->id, 'type' => 'pilihan_ganda', 'question' => 'Q banding', 'order' => 1]);
+        \App\Models\ExamAnswer::create(['exam_attempt_id' => $attempt->id, 'exam_question_id' => $q->id, 'essay_answer' => 'jawaban lama']);
+        $oldAnswerId = $attempt->answers()->first()->id;
         $attempt->update(['violation_appeal_status' => 'diajukan']);
-        
-        // admin terima banding
+
         $this->actingAs($admin)
              ->post(route('exams.resolve-appeal', $attempt), ['action' => 'terima'])
              ->assertRedirect();
-             
+
         $attempt->refresh();
         $this->assertEquals('diterima', $attempt->violation_appeal_status);
-        $this->assertEquals('sedang_berjalan', $attempt->status);
-        $this->assertEquals(0, $attempt->violation_count);
-        $this->assertNull($attempt->score);
-        
-        // pegawai mengerjakan ulang
+        $this->assertEquals('diganti_banding', $attempt->status);
+        $this->assertDatabaseHas('exam_answers', ['id' => $oldAnswerId]);
+        $this->assertDatabaseHas('exam_attempts', ['id' => $attempt->id, 'status' => 'diganti_banding']);
+
+        $newAttempt = ExamAttempt::where('exam_id', $exam->id)->where('user_id', $pegawai1->id)->latest('id')->first();
+        $this->assertNotEquals($attempt->id, $newAttempt->id);
+        $this->assertEquals('sedang_berjalan', $newAttempt->status);
+        $this->assertEquals(0, $newAttempt->violation_count);
+        $this->assertNull($newAttempt->score);
+        $this->assertEquals($newAttempt->id, $exam->fresh()->attemptFor($pegawai1)->id);
+
         $this->actingAs($pegawai1)
              ->post(route('exams.start', $exam))
              ->assertRedirect(route('exams.take', $exam));
