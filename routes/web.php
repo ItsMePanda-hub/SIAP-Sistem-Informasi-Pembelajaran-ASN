@@ -63,6 +63,8 @@ Route::middleware('auth')->group(function () {
     Route::post('/ujian/{exam}/banding', [ExamController::class, 'appealViolation'])->name('exams.appeal');
     Route::post('/ujian-attempt/{attempt}/resolve-banding', [ExamController::class, 'resolveAppeal'])->name('exams.resolve-appeal');
 
+    Route::get('/log-aktivitas', [\App\Http\Controllers\ActivityLogController::class, 'index'])->name('activity-log.index');
+
     // Kelola Pengguna (admin)
     Route::get('/pengguna', [UserController::class, 'index'])->name('users.index');
     Route::get('/pengguna/{user}/edit', [UserController::class, 'edit'])->name('users.edit');

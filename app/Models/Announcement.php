@@ -2,9 +2,12 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 
 class Announcement extends Model
+{
+    use LogsActivity;
 {
     protected $fillable = ['title', 'body', 'category', 'target_unit_kerja', 'created_by'];
 

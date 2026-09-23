@@ -55,6 +55,12 @@
                     Kelola Pengguna
                 </a>
                 @endif
+                @if (auth()->user()->role === 'admin')
+                <a href="{{ route('activity-log.index') }}"
+                   class="block px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('activity-log.*') ? 'bg-primary text-white' : 'text-gray-500 hover:bg-primary-light hover:text-primary-dark' }}">
+                    Log Aktivitas
+                </a>
+                @endif
             </nav>
         </aside>
 
