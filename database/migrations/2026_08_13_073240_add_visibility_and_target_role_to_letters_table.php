@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::table('letters', function (Blueprint $table) {
             $table->enum('visibility', ['all', 'unit', 'role'])->nullable()->after('category');
-            $table->enum('target_role', ['admin', 'pemilik', 'atasan', 'pengguna'])->nullable()->after('target_unit_kerja');
+            $table->enum('target_role', ['admin', 'pemilik', 'atasan', 'pengguna', 'pegawai'])->nullable()->after('target_unit_kerja');
         });
     }
 

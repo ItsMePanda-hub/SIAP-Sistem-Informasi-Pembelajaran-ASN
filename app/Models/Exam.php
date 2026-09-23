@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Exam extends Model
 {
     use LogsActivity;
-{
+
     protected $fillable = [
         'training_id', 'title', 'description', 'target_unit_kerja',
         'duration_minutes', 'max_violations', 'created_by',

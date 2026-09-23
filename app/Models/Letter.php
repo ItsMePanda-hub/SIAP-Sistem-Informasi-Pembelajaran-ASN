@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Letter extends Model
 {
     use LogsActivity;
-{
+
     protected $fillable = ['title', 'nomor_surat', 'category', 'target_unit_kerja', 'file_path', 'uploaded_by', 'visibility', 'target_role'];
 
     public function uploader()

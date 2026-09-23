@@ -12,7 +12,7 @@ return new class extends Migration
             $table->string('nip')->nullable()->unique()->after('id');
             $table->string('jabatan')->nullable()->after('name');
             $table->string('unit_kerja')->nullable()->after('jabatan');
-            $table->enum('role', ['pegawai', 'atasan', 'admin'])->default('pegawai')->after('unit_kerja');
+            $table->enum('role', ['pegawai', 'atasan', 'pemilik', 'admin'])->default('pegawai')->after('unit_kerja');
             $table->foreignId('atasan_id')->nullable()->constrained('users')->nullOnDelete()->after('role');
             $table->enum('status_kepegawaian', ['aktif', 'mode_terbatas', 'nonaktif'])->default('aktif')->after('atasan_id');
             $table->timestamp('simpeg_synced_at')->nullable()->after('status_kepegawaian');
