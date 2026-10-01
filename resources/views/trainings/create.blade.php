@@ -3,7 +3,7 @@
 
     <div class="max-w-2xl mx-auto">
         <div class="bg-white shadow-sm rounded-xl border border-gray-100 p-6">
-            <form method="POST" action="{{ route('trainings.store') }}">
+            <form method="POST" action="{{ route('trainings.store') }}" enctype="multipart/form-data">
                 @csrf
                 <label class="block text-sm font-medium text-gray-700 mb-1">Judul pelatihan</label>
                 <input type="text" name="title" value="{{ old('title') }}"
@@ -24,6 +24,10 @@
                 @else
                     <p class="text-xs text-gray-400 mb-6">Akan dikirim ke bidang: <strong>{{ auth()->user()->unit_kerja }}</strong></p>
                 @endif
+
+                <label class="block text-sm font-medium text-gray-700 mb-1">Materi Pelatihan (PDF, opsional)</label>
+                <input type="file" name="materi" accept=".pdf"
+                       class="w-full border border-gray-200 rounded-lg px-3 py-2 mb-6 focus:border-primary focus:ring-primary">
 
                 <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark">
                     Simpan pelatihan

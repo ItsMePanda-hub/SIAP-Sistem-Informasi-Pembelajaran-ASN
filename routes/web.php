@@ -45,6 +45,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/pelatihan/buat', [TrainingController::class, 'create'])->name('trainings.create');
     Route::post('/pelatihan', [TrainingController::class, 'store'])->name('trainings.store');
     Route::get('/pelatihan/{training}', [TrainingController::class, 'show'])->name('trainings.show');
+    Route::get('/pelatihan/{training}/materi', [TrainingController::class, 'downloadMateri'])->name('trainings.materi');
     Route::post('/pelatihan/{training}/mulai', [TrainingController::class, 'start'])->name('trainings.start');
     Route::post('/pelatihan/{training}/selesai', [TrainingController::class, 'complete'])->name('trainings.complete');
 

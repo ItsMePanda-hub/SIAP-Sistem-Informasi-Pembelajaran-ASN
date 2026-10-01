@@ -7,6 +7,7 @@ use App\Models\TrainingProgress;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Storage;
 
 class TrainingController extends Controller
 {
@@ -88,17 +89,32 @@ class TrainingController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'target_unit_kerja' => 'nullable|string',
+            'materi' => 'nullable|file|mimes:pdf|max:10240',
         ]);
 
         $target = $user->role === 'atasan' ? $user->unit_kerja : ($validated['target_unit_kerja'] ?? null);
+
+        $materialPath = $request->hasFile('materi')
+            ? $request->file('materi')->store('training-materials', 'public')
+            : null;
 
         Training::create([
             'title' => $validated['title'],
             'description' => $validated['description'] ?? null,
             'target_unit_kerja' => $target,
+            'material_path' => $materialPath,
             'created_by' => $user->id,
         ]);
 
         return redirect()->route('trainings.index')->with('status', 'Pelatihan berhasil dibuat.');
+    }
+
+    public function downloadMateri(Training $training)
+    {
+        $this->authorize('view', $training);
+
+        abort_if(is_null($training->material_path), 404);
+
+        return response()->download(Storage::disk('public')->path($training->material_path));
     }
 }

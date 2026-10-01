@@ -7,6 +7,18 @@
         <div class="bg-white shadow-sm rounded-xl border border-gray-100 p-6">
             <p class="text-gray-700 leading-relaxed mb-6">{{ $training->description }}</p>
 
+            @if ($training->material_path)
+                <div class="mb-6 p-4 bg-blue-50 border border-blue-100 rounded-lg">
+                    <div class="text-sm font-semibold text-gray-800 mb-2">Materi Pelatihan</div>
+                    <a href="{{ route('trainings.materi', $training) }}"
+                       class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark">
+                        Buka Materi (PDF)
+                    </a>
+                </div>
+            @else
+                <p class="text-xs text-gray-400 mb-6">Belum ada materi terlampir untuk pelatihan ini.</p>
+            @endif
+
             @if (auth()->user()->role === 'admin')
                 <p class="text-sm text-gray-400 italic">Admin tidak mengikuti pelatihan sebagai peserta — hanya memantau progres tim.</p>
             @elseif (!$progress || $progress->status === 'belum_mulai')

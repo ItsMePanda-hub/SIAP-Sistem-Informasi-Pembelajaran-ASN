@@ -5,6 +5,8 @@ namespace Tests\Feature;
 use App\Models\Training;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class TrainingTest extends TestCase
@@ -68,5 +70,65 @@ class TrainingTest extends TestCase
         $training->progresses()->create(['user_id' => $pA1->id, 'status' => 'selesai']);
 
         $this->assertEquals(50, $training->completionPercentage());
+    }
+
+    public function test_training_can_be_created_with_materi_pdf()
+    {
+        Storage::fake('public');
+
+        $atasan = User::factory()->create(['role' => 'atasan', 'unit_kerja' => 'Bidang A']);
+        $file = UploadedFile::fake()->create('materi.pdf', 100, 'application/pdf');
+
+        $this->actingAs($atasan)->post(route('trainings.store'), [
+            'title'       => 'Training Materi',
+            'description' => 'Deskripsi',
+            'materi'      => $file,
+        ])->assertRedirect(route('trainings.index'));
+
+        $training = Training::where('title', 'Training Materi')->first();
+        $this->assertNotNull($training->material_path);
+        Storage::disk('public')->assertExists($training->material_path);
+    }
+
+    public function test_authorized_user_can_download_materi()
+    {
+        Storage::fake('public');
+
+        $admin  = User::factory()->create(['role' => 'admin']);
+        $pegawai = User::factory()->create(['role' => 'pegawai', 'unit_kerja' => 'Bidang A']);
+        $file   = UploadedFile::fake()->create('materi.pdf', 100, 'application/pdf');
+        $path   = $file->store('training-materials', 'public');
+
+        $training = Training::create([
+            'title'           => 'Training Download',
+            'material_path'   => $path,
+            'target_unit_kerja' => null,
+            'created_by'      => $admin->id,
+        ]);
+
+        $this->actingAs($pegawai)
+             ->get(route('trainings.materi', $training))
+             ->assertStatus(200);
+    }
+
+    public function test_unauthorized_user_cannot_download_materi()
+    {
+        Storage::fake('public');
+
+        $admin   = User::factory()->create(['role' => 'admin']);
+        $pegawai = User::factory()->create(['role' => 'pegawai', 'unit_kerja' => 'Bidang B']);
+        $file    = UploadedFile::fake()->create('materi.pdf', 100, 'application/pdf');
+        $path    = $file->store('training-materials', 'public');
+
+        $training = Training::create([
+            'title'             => 'Training Rahasia',
+            'material_path'     => $path,
+            'target_unit_kerja' => 'Bidang A',
+            'created_by'        => $admin->id,
+        ]);
+
+        $this->actingAs($pegawai)
+             ->get(route('trainings.materi', $training))
+             ->assertStatus(403);
     }
 }
