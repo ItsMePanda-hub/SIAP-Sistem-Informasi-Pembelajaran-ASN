@@ -46,6 +46,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/workspace/buat', [TaskController::class, 'create'])->name('tasks.create');
     Route::post('/workspace', [TaskController::class, 'store'])->name('tasks.store');
     Route::get('/workspace/{task}', [TaskController::class, 'show'])->name('tasks.show');
+    Route::get('/workspace/{task}/lampiran', [TaskController::class, 'downloadAttachment'])->name('tasks.attachment');
     Route::post('/workspace/kerjakan/{assignment}', [TaskController::class, 'submitWork'])->name('tasks.submit');
     Route::post('/workspace/review/{assignment}', [TaskController::class, 'review'])->name('tasks.review');
     Route::get('/workspace/unduh/{assignment}', [TaskController::class, 'downloadSubmission'])->name('tasks.download');

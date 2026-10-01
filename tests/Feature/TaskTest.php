@@ -332,4 +332,86 @@ class TaskTest extends TestCase
         // Pegawai lain TIDAK BISA download (403)
         $this->actingAs($pegawaiHumas)->get(route('tasks.download', $assignment))->assertStatus(403);
     }
+
+    public function test_task_can_be_created_with_attachment_and_downloaded()
+    {
+        Storage::fake('public');
+
+        $atasanIT = User::factory()->create(['role' => 'atasan', 'unit_kerja' => 'Bidang IT']);
+        $pegawaiIT = User::factory()->create(['role' => 'pegawai', 'unit_kerja' => 'Bidang IT']);
+        $file = UploadedFile::fake()->create('panduan_kerja.pdf', 1024, 'application/pdf');
+
+        $this->actingAs($atasanIT)->post(route('tasks.store'), [
+            'title' => 'Task Dengan Panduan',
+            'description' => 'Ada lampiran',
+            'deadline' => now()->addDays(3)->format('Y-m-d H:i:s'),
+            'target_type' => 'bidang',
+            'target_unit_kerja' => 'Bidang IT',
+            'attachment' => $file,
+        ])->assertRedirect(route('tasks.index'));
+
+        $task = Task::where('title', 'Task Dengan Panduan')->first();
+        $this->assertNotNull($task->attachment_path);
+        Storage::disk('public')->assertExists($task->attachment_path);
+
+        // Pegawai yang ditugaskan dapat mengunduh lampiran
+        $this->actingAs($pegawaiIT)
+             ->get(route('tasks.attachment', $task))
+             ->assertStatus(200);
+    }
+
+    public function test_unauthorized_user_cannot_download_task_attachment()
+    {
+        Storage::fake('public');
+
+        $admin = User::factory()->create(['role' => 'admin']);
+        $pegawaiHumas = User::factory()->create(['role' => 'pegawai', 'unit_kerja' => 'Bidang Humas']);
+        $file = UploadedFile::fake()->create('lampiran_rahasia.docx', 500);
+        $path = $file->store('task-attachments', 'public');
+
+        $task = Task::create([
+            'title' => 'Task Khusus IT',
+            'description' => 'Khusus IT',
+            'deadline' => now()->addDays(2),
+            'target_type' => 'bidang',
+            'target_unit_kerja' => 'Bidang IT',
+            'attachment_path' => $path,
+            'created_by' => $admin->id,
+        ]);
+
+        // Pegawai Humas tidak punya akses ke task Bidang IT -> 403
+        $this->actingAs($pegawaiHumas)
+             ->get(route('tasks.attachment', $task))
+             ->assertStatus(403);
+    }
+
+    public function test_task_with_disallowed_attachment_type_is_rejected()
+    {
+        Storage::fake('public');
+
+        $atasanIT = User::factory()->create(['role' => 'atasan', 'unit_kerja' => 'Bidang IT']);
+        $fileExe = UploadedFile::fake()->create('script.exe', 100, 'application/x-msdownload');
+        $filePhp = UploadedFile::fake()->create('backdoor.php', 10, 'text/x-php');
+
+        $this->actingAs($atasanIT)->post(route('tasks.store'), [
+            'title' => 'Task Exe',
+            'description' => 'Deskripsi',
+            'deadline' => now()->addDays(2)->format('Y-m-d H:i:s'),
+            'target_type' => 'bidang',
+            'target_unit_kerja' => 'Bidang IT',
+            'attachment' => $fileExe,
+        ])->assertSessionHasErrors('attachment');
+
+        $this->actingAs($atasanIT)->post(route('tasks.store'), [
+            'title' => 'Task Php',
+            'description' => 'Deskripsi',
+            'deadline' => now()->addDays(2)->format('Y-m-d H:i:s'),
+            'target_type' => 'bidang',
+            'target_unit_kerja' => 'Bidang IT',
+            'attachment' => $filePhp,
+        ])->assertSessionHasErrors('attachment');
+
+        $this->assertDatabaseMissing('tasks', ['title' => 'Task Exe']);
+        $this->assertDatabaseMissing('tasks', ['title' => 'Task Php']);
+    }
 }

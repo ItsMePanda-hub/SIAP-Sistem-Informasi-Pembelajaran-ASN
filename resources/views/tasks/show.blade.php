@@ -35,6 +35,19 @@
                     {{ $task->description }}
                 </div>
             </div>
+
+            @if ($task->attachment_path)
+                <div class="p-4 bg-blue-50 border border-blue-100 rounded-lg flex items-center justify-between">
+                    <div>
+                        <div class="text-xs font-semibold text-gray-800">Lampiran / Berkas Panduan Task</div>
+                        <div class="text-[11px] text-gray-500">Unduh berkas panduan yang disediakan pembuat task.</div>
+                    </div>
+                    <a href="{{ route('tasks.attachment', $task) }}"
+                       class="inline-flex items-center px-3.5 py-1.5 bg-primary text-white rounded-lg text-xs font-medium hover:bg-primary-dark transition">
+                        Buka / Unduh Lampiran
+                    </a>
+                </div>
+            @endif
         </div>
 
         {{-- Tampilan Pegawai --}}

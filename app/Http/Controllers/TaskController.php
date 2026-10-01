@@ -71,6 +71,7 @@ class TaskController extends Controller
             'target_unit_kerja' => 'nullable|string|required_if:target_type,bidang',
             'user_ids' => 'nullable|array|required_if:target_type,individu|min:1',
             'user_ids.*' => 'exists:users,id',
+            'attachment' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,zip,mp4|max:51200',
         ]);
 
         $targetUnit = $validated['target_unit_kerja'] ?? null;
@@ -99,9 +100,14 @@ class TaskController extends Controller
             }
         }
 
+        $attachmentPath = $request->hasFile('attachment')
+            ? $request->file('attachment')->store('task-attachments', 'public')
+            : null;
+
         $task = Task::create([
             'title' => $validated['title'],
             'description' => $validated['description'],
+            'attachment_path' => $attachmentPath,
             'deadline' => $validated['deadline'],
             'target_type' => $validated['target_type'],
             'target_unit_kerja' => $validated['target_type'] === 'bidang' ? $targetUnit : null,
@@ -207,5 +213,14 @@ class TaskController extends Controller
         abort_if(is_null($assignment->submission_path), 404);
 
         return response()->download(Storage::disk('public')->path($assignment->submission_path));
+    }
+
+    public function downloadAttachment(Task $task)
+    {
+        $this->authorize('view', $task);
+
+        abort_if(is_null($task->attachment_path), 404);
+
+        return response()->download(Storage::disk('public')->path($task->attachment_path));
     }
 }

@@ -13,7 +13,7 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('tasks.store') }}" x-data="{ targetType: '{{ old('target_type', 'bidang') }}' }">
+            <form method="POST" action="{{ route('tasks.store') }}" enctype="multipart/form-data" x-data="{ targetType: '{{ old('target_type', 'bidang') }}' }">
                 @csrf
 
                 <div class="mb-4">
@@ -89,6 +89,14 @@
                             <p class="text-xs text-gray-400">Tidak ada pegawai yang tersedia.</p>
                         @endforelse
                     </div>
+                </div>
+
+                {{-- Lampiran Berkas --}}
+                <div class="mb-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Lampiran Berkas / Panduan Task (opsional)</label>
+                    <p class="text-xs text-gray-500 mb-2">Format: PDF, Word, PowerPoint, Excel, ZIP, atau MP4 (maks 50MB)</p>
+                    <input type="file" name="attachment" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.mp4"
+                           class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:border-primary focus:ring-primary">
                 </div>
 
                 <div class="flex items-center justify-end gap-3 pt-2">

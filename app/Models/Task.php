@@ -13,6 +13,7 @@ class Task extends Model
     protected $fillable = [
         'title',
         'description',
+        'attachment_path',
         'deadline',
         'target_type',
         'target_unit_kerja',
