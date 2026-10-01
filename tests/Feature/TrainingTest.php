@@ -80,14 +80,84 @@ class TrainingTest extends TestCase
         $file = UploadedFile::fake()->create('materi.pdf', 100, 'application/pdf');
 
         $this->actingAs($atasan)->post(route('trainings.store'), [
-            'title'       => 'Training Materi',
+            'title'       => 'Training Materi PDF',
             'description' => 'Deskripsi',
             'materi'      => $file,
         ])->assertRedirect(route('trainings.index'));
 
-        $training = Training::where('title', 'Training Materi')->first();
+        $training = Training::where('title', 'Training Materi PDF')->first();
         $this->assertNotNull($training->material_path);
         Storage::disk('public')->assertExists($training->material_path);
+    }
+
+    public function test_training_can_be_created_with_materi_zip_and_downloaded()
+    {
+        Storage::fake('public');
+
+        $atasan = User::factory()->create(['role' => 'atasan', 'unit_kerja' => 'Bidang A']);
+        $file = UploadedFile::fake()->create('arsip_materi.zip', 2048, 'application/zip');
+
+        $this->actingAs($atasan)->post(route('trainings.store'), [
+            'title'       => 'Training Materi ZIP',
+            'description' => 'Deskripsi',
+            'materi'      => $file,
+        ])->assertRedirect(route('trainings.index'));
+
+        $training = Training::where('title', 'Training Materi ZIP')->first();
+        $this->assertNotNull($training->material_path);
+        Storage::disk('public')->assertExists($training->material_path);
+
+        $pegawai = User::factory()->create(['role' => 'pegawai', 'unit_kerja' => 'Bidang A']);
+        $this->actingAs($pegawai)
+             ->get(route('trainings.materi', $training))
+             ->assertStatus(200);
+    }
+
+    public function test_training_can_be_created_with_materi_docx_and_downloaded()
+    {
+        Storage::fake('public');
+
+        $atasan = User::factory()->create(['role' => 'atasan', 'unit_kerja' => 'Bidang A']);
+        $file = UploadedFile::fake()->create('modul.docx', 500, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+
+        $this->actingAs($atasan)->post(route('trainings.store'), [
+            'title'       => 'Training Materi DOCX',
+            'description' => 'Deskripsi',
+            'materi'      => $file,
+        ])->assertRedirect(route('trainings.index'));
+
+        $training = Training::where('title', 'Training Materi DOCX')->first();
+        $this->assertNotNull($training->material_path);
+        Storage::disk('public')->assertExists($training->material_path);
+
+        $pegawai = User::factory()->create(['role' => 'pegawai', 'unit_kerja' => 'Bidang A']);
+        $this->actingAs($pegawai)
+             ->get(route('trainings.materi', $training))
+             ->assertStatus(200);
+    }
+
+    public function test_training_with_disallowed_materi_type_is_rejected()
+    {
+        Storage::fake('public');
+
+        $atasan = User::factory()->create(['role' => 'atasan', 'unit_kerja' => 'Bidang A']);
+        $fileExe = UploadedFile::fake()->create('malicious.exe', 100, 'application/x-msdownload');
+        $filePhp = UploadedFile::fake()->create('shell.php', 10, 'text/x-php');
+
+        $this->actingAs($atasan)->post(route('trainings.store'), [
+            'title'       => 'Training Exe',
+            'description' => 'Deskripsi',
+            'materi'      => $fileExe,
+        ])->assertSessionHasErrors('materi');
+
+        $this->actingAs($atasan)->post(route('trainings.store'), [
+            'title'       => 'Training Php',
+            'description' => 'Deskripsi',
+            'materi'      => $filePhp,
+        ])->assertSessionHasErrors('materi');
+
+        $this->assertDatabaseMissing('trainings', ['title' => 'Training Exe']);
+        $this->assertDatabaseMissing('trainings', ['title' => 'Training Php']);
     }
 
     public function test_authorized_user_can_download_materi()

@@ -25,8 +25,9 @@
                     <p class="text-xs text-gray-400 mb-6">Akan dikirim ke bidang: <strong>{{ auth()->user()->unit_kerja }}</strong></p>
                 @endif
 
-                <label class="block text-sm font-medium text-gray-700 mb-1">Materi Pelatihan (PDF, opsional)</label>
-                <input type="file" name="materi" accept=".pdf"
+                <label class="block text-sm font-medium text-gray-700 mb-1">Materi Pelatihan (opsional)</label>
+                <p class="text-xs text-gray-500 mb-2">Format: PDF, Word, PowerPoint, Excel, ZIP, atau MP4 (maks 50MB)</p>
+                <input type="file" name="materi" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.zip,.mp4"
                        class="w-full border border-gray-200 rounded-lg px-3 py-2 mb-6 focus:border-primary focus:ring-primary">
 
                 <button type="submit" class="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark">

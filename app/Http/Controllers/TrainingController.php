@@ -89,7 +89,7 @@ class TrainingController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'target_unit_kerja' => 'nullable|string',
-            'materi' => 'nullable|file|mimes:pdf|max:10240',
+            'materi' => 'nullable|file|mimes:pdf,doc,docx,ppt,pptx,xls,xlsx,zip,mp4|max:51200',
         ]);
 
         $target = $user->role === 'atasan' ? $user->unit_kerja : ($validated['target_unit_kerja'] ?? null);

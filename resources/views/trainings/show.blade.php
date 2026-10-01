@@ -12,7 +12,7 @@
                     <div class="text-sm font-semibold text-gray-800 mb-2">Materi Pelatihan</div>
                     <a href="{{ route('trainings.materi', $training) }}"
                        class="inline-flex items-center px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark">
-                        Buka Materi (PDF)
+                        Buka / Unduh Materi
                     </a>
                 </div>
             @else
