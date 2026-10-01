@@ -41,9 +41,9 @@
                    class="block px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('letters.*') ? 'bg-primary text-white' : 'text-gray-500 hover:bg-primary-light hover:text-primary-dark' }}">
                     Surat &amp; Dokumen
                 </a>
-                <a href="{{ route('trainings.index') }}"
-                   class="block px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('trainings.*') ? 'bg-primary text-white' : 'text-gray-500 hover:bg-primary-light hover:text-primary-dark' }}">
-                    Pelatihan
+                <a href="{{ route('tasks.index') }}"
+                   class="block px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('tasks.*') ? 'bg-primary text-white' : 'text-gray-500 hover:bg-primary-light hover:text-primary-dark' }}">
+                    Workspace
                 </a>
                 <a href="{{ route('exams.index') }}"
                    class="block px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('exams.*') ? 'bg-primary text-white' : 'text-gray-500 hover:bg-primary-light hover:text-primary-dark' }}">
