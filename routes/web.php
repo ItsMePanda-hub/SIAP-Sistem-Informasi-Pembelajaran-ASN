@@ -5,6 +5,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ExamController;
 use App\Http\Controllers\LetterController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\TaskController;
 use App\Http\Controllers\TrainingController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -39,6 +40,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/surat', [LetterController::class, 'index'])->name('letters.index');
     Route::post('/surat', [LetterController::class, 'store'])->name('letters.store');
     Route::get('/surat/{letter}/unduh', [LetterController::class, 'download'])->name('letters.download');
+
+    // Workspace
+    Route::get('/workspace', [TaskController::class, 'index'])->name('tasks.index');
+    Route::get('/workspace/buat', [TaskController::class, 'create'])->name('tasks.create');
+    Route::post('/workspace', [TaskController::class, 'store'])->name('tasks.store');
+    Route::get('/workspace/{task}', [TaskController::class, 'show'])->name('tasks.show');
+    Route::post('/workspace/kerjakan/{assignment}', [TaskController::class, 'submitWork'])->name('tasks.submit');
+    Route::post('/workspace/review/{assignment}', [TaskController::class, 'review'])->name('tasks.review');
+    Route::get('/workspace/unduh/{assignment}', [TaskController::class, 'downloadSubmission'])->name('tasks.download');
 
     // Pelatihan
     Route::get('/pelatihan', [TrainingController::class, 'index'])->name('trainings.index');
