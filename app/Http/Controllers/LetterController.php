@@ -69,7 +69,7 @@ class LetterController extends Controller
 
         $path = $request->file('file')->store('letters', 'public');
 
-        Letter::create([
+        $letter = Letter::create([
             'title' => $validated['title'],
             'nomor_surat' => $validated['nomor_surat'] ?? null,
             'category' => $validated['category'],
@@ -79,6 +79,11 @@ class LetterController extends Controller
             'file_path' => $path,
             'uploaded_by' => $user->id,
         ]);
+
+        $recipients = \App\Models\User::all()->filter(fn ($u) => $u->id !== $user->id && $letter->isAccessibleBy($u));
+        if ($recipients->isNotEmpty()) {
+            \Illuminate\Support\Facades\Notification::send($recipients, new \App\Notifications\NewLetter($letter));
+        }
 
         return redirect()->route('letters.index')->with('status', 'Surat berhasil diunggah.');
     }

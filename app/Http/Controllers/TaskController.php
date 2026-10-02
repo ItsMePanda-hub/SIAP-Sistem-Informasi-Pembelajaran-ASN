@@ -114,13 +114,15 @@ class TaskController extends Controller
             'created_by' => $user->id,
         ]);
 
+        $newAssignments = [];
+
         if ($validated['target_type'] === 'bidang') {
             $targetPegawai = User::where('role', 'pegawai')
                 ->where('unit_kerja', $targetUnit)
                 ->pluck('id');
 
             foreach ($targetPegawai as $userId) {
-                TaskAssignment::create([
+                $newAssignments[] = TaskAssignment::create([
                     'task_id' => $task->id,
                     'user_id' => $userId,
                     'status' => 'belum_dikerjakan',
@@ -128,12 +130,19 @@ class TaskController extends Controller
             }
         } else {
             foreach ($validated['user_ids'] as $userId) {
-                TaskAssignment::create([
+                $newAssignments[] = TaskAssignment::create([
                     'task_id' => $task->id,
                     'user_id' => $userId,
                     'status' => 'belum_dikerjakan',
                 ]);
             }
+        }
+
+        if (! empty($newAssignments)) {
+            \Illuminate\Support\Facades\Notification::send(
+                User::whereIn('id', collect($newAssignments)->pluck('user_id'))->get(),
+                new \App\Notifications\TaskAssigned($task)
+            );
         }
 
         return redirect()->route('tasks.index')->with('status', 'Task berhasil dibuat di Workspace.');
@@ -164,6 +173,8 @@ class TaskController extends Controller
             'note' => 'nullable|string',
         ]);
 
+        $previousStatus = $assignment->status;
+
         $path = $request->file('file')->store('task-submissions', 'public');
 
         $assignment->update([
@@ -173,6 +184,20 @@ class TaskController extends Controller
             'is_late' => now()->gt($assignment->task->deadline),
             'status' => 'menunggu_review',
         ]);
+
+        if ($previousStatus !== 'menunggu_review') {
+            $assignment->load(['task', 'user']);
+            $reviewers = User::where(function ($q) use ($assignment) {
+                $q->where('role', 'admin')
+                  ->orWhere(function ($q2) use ($assignment) {
+                      $q2->where('role', 'atasan')
+                         ->where('unit_kerja', $assignment->user->unit_kerja);
+                  });
+            })->get();
+            if ($reviewers->isNotEmpty()) {
+                \Illuminate\Support\Facades\Notification::send($reviewers, new \App\Notifications\TaskSubmitted($assignment));
+            }
+        }
 
         return redirect()->route('tasks.show', $assignment->task)->with('status', 'Hasil pekerjaan berhasil dikumpulkan.');
     }
@@ -192,6 +217,9 @@ class TaskController extends Controller
             'reviewed_at' => now(),
             'reviewed_by' => Auth::id(),
         ]);
+
+        $assignment->load(['task', 'user']);
+        \Illuminate\Support\Facades\Notification::send($assignment->user, new \App\Notifications\TaskReviewed($assignment));
 
         return redirect()->route('tasks.show', $assignment->task)->with('status', 'Review pekerjaan berhasil disimpan.');
     }

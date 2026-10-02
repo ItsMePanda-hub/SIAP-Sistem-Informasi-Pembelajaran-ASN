@@ -176,11 +176,21 @@ class ExamController extends Controller
             }
         }
 
+        $previousStatus = $attempt->status;
+        $previousScore = $attempt->score;
+
         $attempt->update([
             'status' => $finalStatus,
             'score' => $score,
             'submitted_at' => $attempt->submitted_at ?? now(),
         ]);
+
+        $isFinalResult = ! is_null($score) && $finalStatus !== 'menunggu_penilaian_esai' && $finalStatus !== 'sedang_berjalan';
+        $wasAlreadyFinal = ! is_null($previousScore) && ! in_array($previousStatus, ['sedang_berjalan', 'menunggu_penilaian_esai'], true);
+        if ($isFinalResult && ! $wasAlreadyFinal) {
+            $attempt->load('exam');
+            \Illuminate\Support\Facades\Notification::send($attempt->user, new \App\Notifications\ExamResultAvailable($attempt));
+        }
     }
 
     private function authorizeAccess(Exam $exam, $user): void
@@ -248,6 +258,13 @@ class ExamController extends Controller
                     ]);
                 }
             }
+        }
+
+        $examRecipients = is_null($exam->target_unit_kerja)
+            ? User::all()->reject(fn ($u) => $u->id === $user->id)
+            : User::where('unit_kerja', $exam->target_unit_kerja)->where('id', '!=', $user->id)->get();
+        if ($examRecipients->isNotEmpty()) {
+            \Illuminate\Support\Facades\Notification::send($examRecipients, new \App\Notifications\ExamAvailable($exam));
         }
 
         return redirect()->route('exams.index')->with('status', 'Ujian berhasil dibuat.');

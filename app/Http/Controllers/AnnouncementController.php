@@ -72,13 +72,21 @@ class AnnouncementController extends Controller
 
         $target = $user->role === 'atasan' ? $user->unit_kerja : ($validated['target_unit_kerja'] ?? null);
 
-        Announcement::create([
+        $announcement = Announcement::create([
             'title' => $validated['title'],
             'body' => $validated['body'],
             'category' => $validated['category'],
             'target_unit_kerja' => $target,
             'created_by' => $user->id,
         ]);
+
+        $recipients = is_null($announcement->target_unit_kerja)
+            ? User::all()
+            : User::where('unit_kerja', $announcement->target_unit_kerja)->get();
+        $recipients = $recipients->reject(fn ($u) => $u->id === $user->id);
+        if ($recipients->isNotEmpty()) {
+            \Illuminate\Support\Facades\Notification::send($recipients, new \App\Notifications\NewAnnouncement($announcement));
+        }
 
         return redirect()->route('announcements.index')->with('status', 'Pengumuman berhasil dikirim.');
     }

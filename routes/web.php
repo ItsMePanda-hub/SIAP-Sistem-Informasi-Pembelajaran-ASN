@@ -82,6 +82,12 @@ Route::middleware('auth')->group(function () {
     Route::get('/pengguna/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
     Route::put('/pengguna/{user}', [UserController::class, 'update'])->name('users.update');
 
+    // Notifikasi (JSON/API session-auth, frontend tahap berikutnya)
+    Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifications/unread-count', [\App\Http\Controllers\NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
+    Route::post('/notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
+    Route::post('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.read');
+
     // Chatbot SIAP
     Route::post('/chatbot/tanya', [\App\Http\Controllers\ChatbotController::class, 'ask'])
         ->middleware(['throttle:10,1', 'throttle:50,1440'])
