@@ -11,7 +11,7 @@
                         <th class="text-left px-4 py-3">Peran</th>
                         <th class="text-left px-4 py-3">Atasan</th>
                         <th class="text-center px-4 py-3">Status Ujian</th>
-                        <th class="text-center px-4 py-3">Pelatihan</th>
+                        <th class="text-center px-4 py-3">Penyelesaian Workspace</th>
                         <th class="text-center px-4 py-3">Pengumuman (Unread)</th>
                     </tr>
                 </thead>
@@ -32,7 +32,7 @@
                                 @endif
                             </td>
                             <td class="px-4 py-3 text-center text-gray-600">
-                                {{ $person['training_progress_percent'] }}%
+                                {{ $person['task_completion_percent'] }}%
                             </td>
                             <td class="px-4 py-3 text-center text-gray-600">
                                 @if ($person['announcement_unread_count'] > 0)

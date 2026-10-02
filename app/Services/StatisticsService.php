@@ -5,8 +5,7 @@ namespace App\Services;
 use App\Models\Announcement;
 use App\Models\AnnouncementRead;
 use App\Models\ExamAttempt;
-use App\Models\TrainingProgress;
-use App\Models\Training;
+use App\Models\TaskAssignment;
 use App\Models\User;
 
 class StatisticsService
@@ -44,11 +43,13 @@ class StatisticsService
             $reads = AnnouncementRead::whereIn('user_id', $pegawaiIds)->count();
             $readRate = min(100, ($reads / ($divisorAnnouncements * $totalPegawai)) * 100);
 
-            // Training Compliance
-            $unitTrainings = Training::whereNull('target_unit_kerja')->orWhere('target_unit_kerja', $unit)->count();
-            $divisorTrainings = $unitTrainings ?: 1;
-            $trainingCompletions = TrainingProgress::whereIn('user_id', $pegawaiIds)->where('status', 'selesai')->count();
-            $trainingCompliance = min(100, ($trainingCompletions / ($divisorTrainings * $totalPegawai)) * 100);
+            $taskPercents = [];
+            foreach ($pegawaiIds as $pegawaiId) {
+                $totalTa = TaskAssignment::where('user_id', $pegawaiId)->count();
+                $doneTa = TaskAssignment::where('user_id', $pegawaiId)->where('status', 'selesai')->count();
+                $taskPercents[] = $totalTa > 0 ? (int) round(($doneTa / $totalTa) * 100) : 0;
+            }
+            $avgTaskCompletion = count($taskPercents) > 0 ? round(array_sum($taskPercents) / count($taskPercents), 2) : 0;
 
             // Exam Score
             $avgExamScore = ExamAttempt::whereIn('user_id', $pegawaiIds)->whereNotNull('score')->avg('score') ?? 0;
@@ -56,7 +57,7 @@ class StatisticsService
             $stats[] = [
                 'unit_kerja' => $unit,
                 'avg_read_rate' => round($readRate, 2),
-                'avg_training_compliance' => round($trainingCompliance, 2),
+                'avg_task_completion' => $avgTaskCompletion,
                 'avg_exam_score' => round($avgExamScore, 2),
             ];
         }
@@ -96,16 +97,9 @@ class StatisticsService
                 ->whereNotNull('score')
                 ->exists();
 
-            // training_progress_percent
-            $totalTrainings = Training::whereNull('target_unit_kerja')
-                ->orWhere('target_unit_kerja', $p->unit_kerja)
-                ->count();
-            $completedTrainings = TrainingProgress::where('user_id', $p->id)
-                ->where('status', 'selesai')
-                ->count();
-            $trainingPercent = $totalTrainings > 0
-                ? round(($completedTrainings / $totalTrainings) * 100, 2)
-                : 100;
+            $totalTa = TaskAssignment::where('user_id', $p->id)->count();
+            $doneTa = TaskAssignment::where('user_id', $p->id)->where('status', 'selesai')->count();
+            $taskCompletionPercent = $totalTa > 0 ? (int) round(($doneTa / $totalTa) * 100) : 0;
 
             // announcement_unread_count
             $totalAnnouncements = Announcement::whereNull('target_unit_kerja')
@@ -116,12 +110,12 @@ class StatisticsService
 
             // HANYA field aman — TIDAK PERNAH menyertakan email, nip, password, dst.
             $roster[] = [
-                'name'                      => $p->name,
-                'unit_kerja'                => $p->unit_kerja,
-                'role'                      => $p->role,
-                'atasan_name'               => $p->atasan?->name,
-                'exam_completed'            => $examCompleted,
-                'training_progress_percent' => $trainingPercent,
+                'name'                    => $p->name,
+                'unit_kerja'              => $p->unit_kerja,
+                'role'                    => $p->role,
+                'atasan_name'             => $p->atasan?->name,
+                'exam_completed'          => $examCompleted,
+                'task_completion_percent' => $taskCompletionPercent,
                 'announcement_unread_count' => $unreadCount,
             ];
         }
@@ -138,12 +132,9 @@ class StatisticsService
         $readAnnouncements = AnnouncementRead::where('user_id', $user->id)->count();
         $unreadAnnouncements = max(0, $totalAnnouncements - $readAnnouncements);
 
-        // Training Progress
-        $completedTrainings = TrainingProgress::where('user_id', $user->id)->where('status', 'selesai')->count();
-        $totalTrainings = Training::whereNull('target_unit_kerja')
-            ->orWhere('target_unit_kerja', $user->unit_kerja)
-            ->count();
-        $trainingProgress = $totalTrainings > 0 ? round(($completedTrainings / $totalTrainings) * 100, 2) : 100;
+        $totalTa = TaskAssignment::where('user_id', $user->id)->count();
+        $doneTa = TaskAssignment::where('user_id', $user->id)->where('status', 'selesai')->count();
+        $taskCompletionPercent = $totalTa > 0 ? (int) round(($doneTa / $totalTa) * 100) : 0;
 
         // Exam History
         $examHistory = ExamAttempt::where('user_id', $user->id)
@@ -156,7 +147,7 @@ class StatisticsService
         return [
             'type' => 'pegawai',
             'unread_announcements' => $unreadAnnouncements,
-            'training_progress' => $trainingProgress,
+            'task_completion_percent' => $taskCompletionPercent,
             'exam_history' => $examHistory,
         ];
     }

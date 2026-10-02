@@ -29,8 +29,8 @@
                                         <div class="text-lg font-bold text-teal-600">{{ $unitStat['avg_read_rate'] }}%</div>
                                     </div>
                                     <div>
-                                        <div class="text-xs text-gray-500">Pelatihan</div>
-                                        <div class="text-lg font-bold text-yellow-600">{{ $unitStat['avg_training_compliance'] }}%</div>
+                                        <div class="text-xs text-gray-500">Workspace</div>
+                                        <div class="text-lg font-bold text-yellow-600">{{ $unitStat['avg_task_completion'] }}%</div>
                                     </div>
                                     <div>
                                         <div class="text-xs text-gray-500">Nilai Ujian</div>
@@ -47,8 +47,8 @@
                             <div class="text-2xl font-bold text-teal-600 mt-1">{{ $stats['unread_announcements'] }}</div>
                         </div>
                         <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-100">
-                            <div class="text-sm font-semibold text-gray-800">Progress Pelatihan</div>
-                            <div class="text-2xl font-bold text-yellow-600 mt-1">{{ $stats['training_progress'] }}%</div>
+                            <div class="text-sm font-semibold text-gray-800">Penyelesaian Workspace</div>
+                            <div class="text-2xl font-bold text-yellow-600 mt-1">{{ $stats['task_completion_percent'] }}%</div>
                         </div>
                         <div class="bg-white shadow-sm rounded-xl p-5 border border-gray-100">
                             <div class="text-sm font-semibold text-gray-800">Riwayat Nilai Ujian</div>
