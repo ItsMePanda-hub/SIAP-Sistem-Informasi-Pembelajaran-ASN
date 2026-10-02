@@ -12,25 +12,29 @@ class NotificationController extends Controller
         $user = $request->user();
         $notifications = $user->notifications()->latest()->paginate(15);
 
-        $data = $notifications->getCollection()->map(function ($n) {
-            return [
-                'id' => $n->id,
-                'type' => $n->type,
-                'title' => $n->data['title'] ?? null,
-                'message' => $n->data['message'] ?? null,
-                'url' => $n->data['url'] ?? null,
-                'read_at' => $n->read_at,
-                'created_at' => $n->created_at,
-            ];
-        });
+        if ($request->expectsJson() || $request->wantsJson() || $request->ajax()) {
+            $data = $notifications->getCollection()->map(function ($n) {
+                return [
+                    'id' => $n->id,
+                    'type' => $n->type,
+                    'title' => $n->data['title'] ?? null,
+                    'message' => $n->data['message'] ?? null,
+                    'url' => $n->data['url'] ?? null,
+                    'read_at' => $n->read_at,
+                    'created_at' => $n->created_at,
+                ];
+            });
 
-        return response()->json([
-            'data' => $data,
-            'current_page' => $notifications->currentPage(),
-            'last_page' => $notifications->lastPage(),
-            'per_page' => $notifications->perPage(),
-            'total' => $notifications->total(),
-        ]);
+            return response()->json([
+                'data' => $data,
+                'current_page' => $notifications->currentPage(),
+                'last_page' => $notifications->lastPage(),
+                'per_page' => $notifications->perPage(),
+                'total' => $notifications->total(),
+            ]);
+        }
+
+        return view('notifications.index', compact('notifications'));
     }
 
     public function unreadCount(Request $request)

@@ -72,21 +72,25 @@
                     @endisset
                 </div>
 
-                <div class="relative" x-data="{ open: false }">
-                    <button @click="open = !open" @click.outside="open = false"
-                            class="flex items-center gap-2 text-sm text-gray-600">
-                        <div class="w-8 h-8 rounded-full bg-accent-light text-accent flex items-center justify-center font-semibold text-xs">
-                            {{ strtoupper(substr(auth()->user()->name, 0, 2)) }}
+                <div class="flex items-center gap-3">
+                    <x-notification-bell />
+                    <div class="relative" x-data="{ open: false }">
+                        <button @click="open = !open" @click.outside="open = false"
+                                class="flex items-center gap-2 text-sm text-gray-600">
+                            <div class="w-8 h-8 rounded-full bg-accent-light text-accent flex items-center justify-center font-semibold text-xs">
+                                {{ strtoupper(substr(auth()->user()->name, 0, 2)) }}
+                            </div>
+                            {{ auth()->user()->name }}
+                        </button>
+                        <div x-show="open" x-cloak
+                             class="absolute right-0 mt-2 w-44 bg-white rounded-lg shadow-lg border border-gray-100 py-1 text-sm z-50">
+                            <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-gray-600 hover:bg-primary-light">Profil</a>
+                            <a href="{{ route('notifications.index') }}" class="block px-4 py-2 text-gray-600 hover:bg-primary-light">Notifikasi</a>
+                            <form method="POST" action="{{ route('logout') }}">
+                                @csrf
+                                <button type="submit" class="w-full text-left px-4 py-2 text-gray-600 hover:bg-primary-light">Keluar</button>
+                            </form>
                         </div>
-                        {{ auth()->user()->name }}
-                    </button>
-                    <div x-show="open" x-cloak
-                         class="absolute right-0 mt-2 w-44 bg-white rounded-lg shadow-lg border border-gray-100 py-1 text-sm z-50">
-                        <a href="{{ route('profile.edit') }}" class="block px-4 py-2 text-gray-600 hover:bg-primary-light">Profil</a>
-                        <form method="POST" action="{{ route('logout') }}">
-                            @csrf
-                            <button type="submit" class="w-full text-left px-4 py-2 text-gray-600 hover:bg-primary-light">Keluar</button>
-                        </form>
                     </div>
                 </div>
             </header>
