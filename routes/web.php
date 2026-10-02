@@ -82,11 +82,16 @@ Route::middleware('auth')->group(function () {
     Route::get('/pengguna/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
     Route::put('/pengguna/{user}', [UserController::class, 'update'])->name('users.update');
 
-    // Notifikasi (JSON/API session-auth, frontend tahap berikutnya)
+    // Notifikasi (JSON/API session-auth)
     Route::get('/notifications', [\App\Http\Controllers\NotificationController::class, 'index'])->name('notifications.index');
     Route::get('/notifications/unread-count', [\App\Http\Controllers\NotificationController::class, 'unreadCount'])->name('notifications.unread-count');
     Route::post('/notifications/read-all', [\App\Http\Controllers\NotificationController::class, 'markAllAsRead'])->name('notifications.read-all');
     Route::post('/notifications/{id}/read', [\App\Http\Controllers\NotificationController::class, 'markAsRead'])->name('notifications.read');
+
+    // Web Push
+    Route::get('/push/vapid-public-key', [\App\Http\Controllers\PushSubscriptionController::class, 'publicKey'])->name('push.vapid');
+    Route::post('/push/subscribe', [\App\Http\Controllers\PushSubscriptionController::class, 'subscribe'])->name('push.subscribe');
+    Route::post('/push/unsubscribe', [\App\Http\Controllers\PushSubscriptionController::class, 'unsubscribe'])->name('push.unsubscribe');
 
     // Chatbot SIAP
     Route::post('/chatbot/tanya', [\App\Http\Controllers\ChatbotController::class, 'ask'])

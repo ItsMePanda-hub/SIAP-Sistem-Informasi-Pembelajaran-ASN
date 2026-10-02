@@ -24,9 +24,12 @@
     }">
         <div class="flex items-center justify-between">
             <h2 class="text-sm font-semibold text-gray-700">Daftar notifikasi</h2>
-            @if($notifications->total() > 0)
-                <button @click="markAll()" type="button" class="text-xs font-medium text-primary-dark hover:underline">Tandai semua sudah dibaca</button>
-            @endif
+            <div class="flex items-center gap-3">
+                <x-push-toggle />
+                @if($notifications->total() > 0)
+                    <button @click="markAll()" type="button" class="text-xs font-medium text-primary-dark hover:underline">Tandai semua sudah dibaca</button>
+                @endif
+            </div>
         </div>
 
         <div class="bg-white rounded-xl border border-gray-100 overflow-hidden divide-y divide-gray-50">

@@ -139,10 +139,17 @@ class TaskController extends Controller
         }
 
         if (! empty($newAssignments)) {
+            $taskRecipients = User::whereIn('id', collect($newAssignments)->pluck('user_id'))->get();
             \Illuminate\Support\Facades\Notification::send(
-                User::whereIn('id', collect($newAssignments)->pluck('user_id'))->get(),
+                $taskRecipients,
                 new \App\Notifications\TaskAssigned($task)
             );
+            try {
+                $payload = \App\Services\WebPushService::payloadFromDatabase((new \App\Notifications\TaskAssigned($task))->toDatabase($taskRecipients->first()));
+                foreach ($taskRecipients as $recipient) {
+                    \App\Jobs\SendWebPush::dispatch($recipient->id, $payload);
+                }
+            } catch (\Throwable $e) {}
         }
 
         return redirect()->route('tasks.index')->with('status', 'Task berhasil dibuat di Workspace.');
@@ -196,6 +203,12 @@ class TaskController extends Controller
             })->get();
             if ($reviewers->isNotEmpty()) {
                 \Illuminate\Support\Facades\Notification::send($reviewers, new \App\Notifications\TaskSubmitted($assignment));
+                try {
+                    $payload = \App\Services\WebPushService::payloadFromDatabase((new \App\Notifications\TaskSubmitted($assignment))->toDatabase($reviewers->first()));
+                    foreach ($reviewers as $reviewer) {
+                        \App\Jobs\SendWebPush::dispatch($reviewer->id, $payload);
+                    }
+                } catch (\Throwable $e) {}
             }
         }
 
@@ -220,6 +233,10 @@ class TaskController extends Controller
 
         $assignment->load(['task', 'user']);
         \Illuminate\Support\Facades\Notification::send($assignment->user, new \App\Notifications\TaskReviewed($assignment));
+        try {
+            $payload = \App\Services\WebPushService::payloadFromDatabase((new \App\Notifications\TaskReviewed($assignment))->toDatabase($assignment->user));
+            \App\Jobs\SendWebPush::dispatch($assignment->user->id, $payload);
+        } catch (\Throwable $e) {}
 
         return redirect()->route('tasks.show', $assignment->task)->with('status', 'Review pekerjaan berhasil disimpan.');
     }

@@ -190,6 +190,10 @@ class ExamController extends Controller
         if ($isFinalResult && ! $wasAlreadyFinal) {
             $attempt->load('exam');
             \Illuminate\Support\Facades\Notification::send($attempt->user, new \App\Notifications\ExamResultAvailable($attempt));
+            try {
+                $payload = \App\Services\WebPushService::payloadFromDatabase((new \App\Notifications\ExamResultAvailable($attempt))->toDatabase($attempt->user));
+                \App\Jobs\SendWebPush::dispatch($attempt->user->id, $payload);
+            } catch (\Throwable $e) {}
         }
     }
 
@@ -265,6 +269,12 @@ class ExamController extends Controller
             : User::where('unit_kerja', $exam->target_unit_kerja)->where('id', '!=', $user->id)->get();
         if ($examRecipients->isNotEmpty()) {
             \Illuminate\Support\Facades\Notification::send($examRecipients, new \App\Notifications\ExamAvailable($exam));
+            try {
+                $payload = \App\Services\WebPushService::payloadFromDatabase((new \App\Notifications\ExamAvailable($exam))->toDatabase($examRecipients->first()));
+                foreach ($examRecipients as $recipient) {
+                    \App\Jobs\SendWebPush::dispatch($recipient->id, $payload);
+                }
+            } catch (\Throwable $e) {}
         }
 
         return redirect()->route('exams.index')->with('status', 'Ujian berhasil dibuat.');

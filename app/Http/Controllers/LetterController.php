@@ -83,6 +83,12 @@ class LetterController extends Controller
         $recipients = \App\Models\User::all()->filter(fn ($u) => $u->id !== $user->id && $letter->isAccessibleBy($u));
         if ($recipients->isNotEmpty()) {
             \Illuminate\Support\Facades\Notification::send($recipients, new \App\Notifications\NewLetter($letter));
+            try {
+                $payload = \App\Services\WebPushService::payloadFromDatabase((new \App\Notifications\NewLetter($letter))->toDatabase($recipients->first()));
+                foreach ($recipients as $recipient) {
+                    \App\Jobs\SendWebPush::dispatch($recipient->id, $payload);
+                }
+            } catch (\Throwable $e) {}
         }
 
         return redirect()->route('letters.index')->with('status', 'Surat berhasil diunggah.');

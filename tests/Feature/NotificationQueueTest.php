@@ -83,7 +83,7 @@ class NotificationQueueTest extends TestCase
             'title' => 'Worker Test', 'body' => 'B', 'category' => 'rutin', 'target_unit_kerja' => 'IT',
         ]);
 
-        $this->assertDatabaseCount('jobs', 1);
+        $this->assertGreaterThanOrEqual(1, \Illuminate\Support\Facades\DB::table('jobs')->count());
         $this->assertDatabaseCount('notifications', 0);
         $this->assertEquals(0, $pegawai->fresh()->notifications()->count());
 

@@ -86,6 +86,12 @@ class AnnouncementController extends Controller
         $recipients = $recipients->reject(fn ($u) => $u->id === $user->id);
         if ($recipients->isNotEmpty()) {
             \Illuminate\Support\Facades\Notification::send($recipients, new \App\Notifications\NewAnnouncement($announcement));
+            try {
+                $payload = \App\Services\WebPushService::payloadFromDatabase((new \App\Notifications\NewAnnouncement($announcement))->toDatabase($recipients->first()));
+                foreach ($recipients as $recipient) {
+                    \App\Jobs\SendWebPush::dispatch($recipient->id, $payload);
+                }
+            } catch (\Throwable $e) {}
         }
 
         return redirect()->route('announcements.index')->with('status', 'Pengumuman berhasil dikirim.');
