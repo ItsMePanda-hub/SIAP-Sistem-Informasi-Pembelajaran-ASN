@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Models\Task;
+use App\Models\TaskAssignment;
 use App\Models\User;
 use App\Services\StatisticsService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -18,7 +20,6 @@ class TeamOverviewTest extends TestCase
         
         $atasanBoss = User::factory()->create(['role' => 'atasan', 'name' => 'Boss A', 'unit_kerja' => 'Unit A']);
         
-        // Buat beberapa pegawai di unit berbeda
         User::factory()->create(['role' => 'pegawai', 'unit_kerja' => 'Unit A', 'email' => 'a@test.com', 'nip' => '111', 'atasan_id' => $atasanBoss->id]);
         User::factory()->create(['role' => 'pegawai', 'unit_kerja' => 'Unit B', 'email' => 'b@test.com', 'nip' => '222']);
         
@@ -30,13 +31,11 @@ class TeamOverviewTest extends TestCase
         $this->assertCount(3, $rosterAdmin);
         $this->assertCount(3, $rosterPemilik);
         
-        // Pastikan atasan juga masuk
         $rolesAdmin = array_column($rosterAdmin, 'role');
         $this->assertContains('atasan', $rolesAdmin);
         $this->assertContains('pegawai', $rolesAdmin);
         $this->assertNotContains('admin', $rolesAdmin);
         
-        // Pastikan atasan_name ada
         $pegawaiA = array_filter($rosterAdmin, fn($r) => $r['role'] === 'pegawai' && $r['unit_kerja'] === 'Unit A');
         $this->assertNotEmpty($pegawaiA);
         $this->assertEquals('Boss A', array_values($pegawaiA)[0]['atasan_name']);
@@ -46,13 +45,10 @@ class TeamOverviewTest extends TestCase
     {
         $atasan = User::factory()->create(['role' => 'atasan', 'unit_kerja' => 'Unit X']);
         
-        // Atasan lain di unit X (meskipun aneh, kita tes) dan di unit Y
         User::factory()->create(['role' => 'atasan', 'unit_kerja' => 'Unit X', 'name' => 'Atasan X2']);
         User::factory()->create(['role' => 'atasan', 'unit_kerja' => 'Unit Y', 'name' => 'Atasan Y']);
         
-        // Pegawai di unit X
         User::factory()->create(['role' => 'pegawai', 'unit_kerja' => 'Unit X', 'name' => 'Pegawai X', 'atasan_id' => $atasan->id]);
-        // Pegawai di unit Y
         User::factory()->create(['role' => 'pegawai', 'unit_kerja' => 'Unit Y', 'name' => 'Pegawai Y']);
 
         $service = new StatisticsService();
@@ -99,11 +95,47 @@ class TeamOverviewTest extends TestCase
         $this->assertArrayHasKey('role', $entry);
         $this->assertArrayHasKey('atasan_name', $entry);
         $this->assertArrayHasKey('exam_completed', $entry);
-        $this->assertArrayHasKey('training_progress_percent', $entry);
+        $this->assertArrayHasKey('task_completion_percent', $entry);
         $this->assertArrayHasKey('announcement_unread_count', $entry);
 
         $this->assertArrayNotHasKey('email', $entry);
         $this->assertArrayNotHasKey('nip', $entry);
         $this->assertArrayNotHasKey('password', $entry);
+    }
+
+    public function test_task_completion_percent_75_with_4_assignments()
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        $pegawai = User::factory()->create(['role' => 'pegawai', 'unit_kerja' => 'Unit T', 'name' => 'Pegawai T']);
+        for ($i = 0; $i < 4; $i++) {
+            $task = Task::create([
+                'title' => "TT $i",
+                'description' => 'desc',
+                'deadline' => now()->addDays(2),
+                'target_type' => 'individu',
+                'created_by' => $admin->id,
+            ]);
+            TaskAssignment::create([
+                'task_id' => $task->id,
+                'user_id' => $pegawai->id,
+                'status' => $i < 3 ? 'selesai' : 'belum_dikerjakan',
+            ]);
+        }
+        $service = new StatisticsService();
+        $roster = $service->getTeamOverviewForUser($admin);
+        $entry = collect($roster)->firstWhere('name', 'Pegawai T');
+        $this->assertNotNull($entry);
+        $this->assertEquals(75, $entry['task_completion_percent']);
+    }
+
+    public function test_task_completion_percent_zero_without_assignments()
+    {
+        $admin = User::factory()->create(['role' => 'admin']);
+        User::factory()->create(['role' => 'pegawai', 'unit_kerja' => 'Unit T', 'name' => 'Pegawai Kosong']);
+        $service = new StatisticsService();
+        $roster = $service->getTeamOverviewForUser($admin);
+        $entry = collect($roster)->firstWhere('name', 'Pegawai Kosong');
+        $this->assertNotNull($entry);
+        $this->assertEquals(0, $entry['task_completion_percent']);
     }
 }
