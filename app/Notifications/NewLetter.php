@@ -4,9 +4,10 @@ namespace App\Notifications;
 
 use App\Models\Letter;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Notification;
 
-class NewLetter extends Notification
+class NewLetter extends Notification implements ShouldQueue
 {
     use Queueable;
 
