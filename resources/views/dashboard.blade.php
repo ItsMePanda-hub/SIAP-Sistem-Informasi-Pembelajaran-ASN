@@ -80,9 +80,9 @@
                 <div class="text-sm font-semibold text-gray-800 mb-1">Surat &amp; Dokumen</div>
                 <div class="text-xs text-gray-500">Unduh SK, nota dinas, dan surat tugas</div>
             </a>
-            <a href="{{ route('trainings.index') }}" class="bg-white shadow-sm rounded-xl p-5 border border-gray-100 hover:border-primary transition">
-                <div class="text-sm font-semibold text-gray-800 mb-1">Pelatihan</div>
-                <div class="text-xs text-gray-500">Ikuti pelatihan dan dapatkan sertifikat</div>
+            <a href="{{ route('tasks.index') }}" class="bg-white shadow-sm rounded-xl p-5 border border-gray-100 hover:border-primary transition">
+                <div class="text-sm font-semibold text-gray-800 mb-1">Workspace</div>
+                <div class="text-xs text-gray-500">Distribusi tugas, pengumpulan hasil kerja, dan review atasan</div>
             </a>
             <a href="{{ route('exams.index') }}" class="bg-white shadow-sm rounded-xl p-5 border border-gray-100 hover:border-primary transition">
                 <div class="text-sm font-semibold text-gray-800 mb-1">Ujian</div>

@@ -22,7 +22,7 @@
     <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20">
         <div class="max-w-3xl">
             <h1 class="font-display font-bold text-3xl sm:text-4xl lg:text-5xl text-gray-900 leading-tight">SIAP — Sistem Informasi & Pembelajaran ASN</h1>
-            <p class="mt-4 text-base sm:text-lg text-gray-500 leading-relaxed">Portal internal Diskominfo Kota Sawahlunto untuk pengumuman, surat dinas, workspace/tugas, pelatihan, dan ujian pegawai dalam satu tempat yang terpadu.</p>
+            <p class="mt-4 text-base sm:text-lg text-gray-500 leading-relaxed">Portal internal Diskominfo Kota Sawahlunto untuk pengumuman, surat dinas, workspace/tugas, dan ujian pegawai dalam satu tempat yang terpadu.</p>
             <div class="mt-8">
                 <a href="{{ route('login') }}" class="inline-flex items-center px-8 py-3 rounded-xl bg-primary text-white font-semibold hover:bg-primary-dark transition shadow-sm">Masuk ke SIAP</a>
             </div>

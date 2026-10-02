@@ -19,9 +19,6 @@
                         {{ __('Pengumuman') }}
                     </x-nav-link>
 
-                    <x-nav-link :href="route('training.index')" :active="request()->routeIs('training.*')">
-                        {{ __('Pelatihan') }}
-                    </x-nav-link>
                     <x-nav-link :href="route('exams.index')" :active="request()->routeIs('exams.*')">
                         {{ __('Ujian') }}
                     </x-nav-link>
@@ -84,9 +81,6 @@
                 {{ __('Pengumuman') }}
             </x-responsive-nav-link>
 
-            <x-responsive-nav-link :href="route('training.index')" :active="request()->routeIs('training.*')">
-                {{ __('Pelatihan') }}
-            </x-responsive-nav-link>
             <x-responsive-nav-link :href="route('exams.index')" :active="request()->routeIs('exams.*')">
                 {{ __('Ujian') }}
             </x-responsive-nav-link>

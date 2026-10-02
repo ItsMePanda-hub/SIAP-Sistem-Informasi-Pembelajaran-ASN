@@ -88,7 +88,7 @@ class DatabaseSeeder extends Seeder
         // Pengumuman contoh
         Announcement::create([
             'title' => 'Selamat Datang di SIAP',
-            'body' => 'Selamat datang di Sistem Informasi & Pembelajaran ASN Diskominfo Sawahlunto. Silakan cek menu Pengumuman, Surat & Dokumen, dan Pelatihan secara berkala.',
+            'body' => 'Selamat datang di Sistem Informasi & Pembelajaran ASN Diskominfo Sawahlunto. Silakan cek menu Pengumuman, Surat & Dokumen, Workspace, dan Ujian secara berkala.',
             'category' => 'rutin',
             'target_unit_kerja' => null, // broadcast semua bidang
             'created_by' => $admin->id,
