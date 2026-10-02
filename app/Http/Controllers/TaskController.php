@@ -201,7 +201,7 @@ class TaskController extends Controller
         $user = Auth::user();
 
         $isAllowed = false;
-        if ($user->role === 'admin') {
+        if (in_array($user->role, ['admin', 'pemilik'])) {
             $isAllowed = true;
         } elseif ($user->role === 'atasan' && $user->unit_kerja === $assignment->user->unit_kerja) {
             $isAllowed = true;

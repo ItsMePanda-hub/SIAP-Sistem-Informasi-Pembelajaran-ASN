@@ -333,6 +333,36 @@ class TaskTest extends TestCase
         $this->actingAs($pegawaiHumas)->get(route('tasks.download', $assignment))->assertStatus(403);
     }
 
+    public function test_pemilik_can_download_any_submission()
+    {
+        Storage::fake('public');
+
+        $pemilik = User::factory()->create(['role' => 'pemilik']);
+        $admin = User::factory()->create(['role' => 'admin']);
+        $pegawaiIT = User::factory()->create(['role' => 'pegawai', 'unit_kerja' => 'Bidang IT']);
+
+        $task = Task::create([
+            'title' => 'Task Pemilik Download',
+            'description' => 'Test pemilik',
+            'deadline' => now()->addDays(2),
+            'target_type' => 'individu',
+            'created_by' => $admin->id,
+        ]);
+
+        $file = UploadedFile::fake()->create('dokumen.docx', 500);
+        $path = $file->store('task-submissions', 'public');
+
+        $assignment = TaskAssignment::create([
+            'task_id' => $task->id,
+            'user_id' => $pegawaiIT->id,
+            'status' => 'menunggu_review',
+            'submission_path' => $path,
+            'submitted_at' => now(),
+        ]);
+
+        $this->actingAs($pemilik)->get(route('tasks.download', $assignment))->assertStatus(200);
+    }
+
     public function test_task_can_be_created_with_attachment_and_downloaded()
     {
         Storage::fake('public');
