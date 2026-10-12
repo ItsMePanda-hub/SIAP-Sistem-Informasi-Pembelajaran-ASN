@@ -93,6 +93,24 @@ Route::middleware('auth')->group(function () {
     Route::post('/push/subscribe', [\App\Http\Controllers\PushSubscriptionController::class, 'subscribe'])->name('push.subscribe');
     Route::post('/push/unsubscribe', [\App\Http\Controllers\PushSubscriptionController::class, 'unsubscribe'])->name('push.unsubscribe');
 
+    // Pembelajaran — SIAP Library
+    Route::get('/perpustakaan', [\App\Http\Controllers\LibraryController::class, 'index'])->name('library.index');
+    Route::get('/perpustakaan/bookmark', [\App\Http\Controllers\LibraryController::class, 'bookmarks'])->name('library.bookmarks');
+    Route::get('/perpustakaan/create', [\App\Http\Controllers\LibraryController::class, 'create'])->name('library.create');
+    Route::post('/perpustakaan', [\App\Http\Controllers\LibraryController::class, 'store'])->name('library.store');
+    Route::get('/perpustakaan/{learningMaterial}/edit', [\App\Http\Controllers\LibraryController::class, 'edit'])->name('library.edit');
+    Route::put('/perpustakaan/{learningMaterial}', [\App\Http\Controllers\LibraryController::class, 'update'])->name('library.update');
+    Route::delete('/perpustakaan/{learningMaterial}', [\App\Http\Controllers\LibraryController::class, 'destroy'])->name('library.destroy');
+    Route::get('/perpustakaan/{learningMaterial}/source', [\App\Http\Controllers\LibraryController::class, 'editSource'])->name('library.source.edit');
+    Route::put('/perpustakaan/{learningMaterial}/source', [\App\Http\Controllers\LibraryController::class, 'updateSource'])->name('library.source.update');
+    Route::post('/perpustakaan/{learningMaterial}/publish', [\App\Http\Controllers\LibraryController::class, 'publish'])->name('library.publish');
+    Route::post('/perpustakaan/{learningMaterial}/unpublish', [\App\Http\Controllers\LibraryController::class, 'unpublish'])->name('library.unpublish');
+    Route::get('/perpustakaan/{learningMaterial}/pdf', [\App\Http\Controllers\LibraryController::class, 'pdf'])->name('library.pdf');
+    Route::get('/perpustakaan/{learningMaterial}/baca', [\App\Http\Controllers\LibraryController::class, 'read'])->name('library.read');
+    Route::post('/perpustakaan/{learningMaterial}/progress', [\App\Http\Controllers\LibraryController::class, 'updateProgress'])->name('library.progress.update');
+    Route::post('/perpustakaan/{learningMaterial}/bookmark', [\App\Http\Controllers\LibraryController::class, 'storeBookmark'])->name('library.bookmark.store');
+    Route::delete('/perpustakaan/{learningMaterial}/bookmark', [\App\Http\Controllers\LibraryController::class, 'destroyBookmark'])->name('library.bookmark.destroy');
+
     // Chatbot SIAP
     Route::post('/chatbot/tanya', [\App\Http\Controllers\ChatbotController::class, 'ask'])
         ->middleware(['throttle:10,1', 'throttle:50,1440'])

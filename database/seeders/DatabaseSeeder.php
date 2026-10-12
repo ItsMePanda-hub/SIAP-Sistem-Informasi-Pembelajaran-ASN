@@ -9,168 +9,141 @@ use App\Models\Training;
 use App\Models\TrainingProgress;
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
-        // 1. Admin — akses penuh ke seluruh sistem, di luar struktur organisasi
-        $admin = User::create([
-            'name' => 'Admin SIAP',
-            'email' => 'admin@diskominfo.go.id',
-            'password' => Hash::make('password123'),
-            'nip' => '198001012005011001',
-            'jabatan' => 'Administrator Sistem',
-            'unit_kerja' => null,
-            'role' => 'admin',
+        User::whereIn('email', [
+            'admin@diskominfo.go.id',
+            'pemilik@diskominfo.go.id',
+            'budi@diskominfo.go.id',
+            'siti@diskominfo.go.id',
+            'andi@diskominfo.go.id',
+            'rani@diskominfo.go.id',
+        ])->delete();
+
+        $this->call([
+            LibraryLevelSeeder::class,
+            LibraryCategorySeeder::class,
+            LibraryTestAccountsSeeder::class,
+            LibraryMaterialSeeder::class,
         ]);
 
-        // 2. Pemilik — pimpinan tertinggi, lintas-bidang
-        $pemilik = User::create([
-            'name' => 'Kepala Dinas Diskominfo',
-            'email' => 'pemilik@diskominfo.go.id',
-            'password' => Hash::make('password123'),
-            'nip' => '197505051999031005',
-            'jabatan' => 'Kepala Dinas',
-            'unit_kerja' => null,
-            'role' => 'pemilik',
-        ]);
+        $adminId = User::where('email', 'admin.system@siap.test')->value('id')
+            ?? User::where('email', 'admin.library@siap.test')->value('id')
+            ?? User::where('role', 'admin')->value('id');
 
-        // 3. Atasan — per bidang
-        $atasanIT = User::create([
-            'name' => 'Budi (Atasan Bidang IT)',
-            'email' => 'budi@diskominfo.go.id',
-            'password' => Hash::make('password123'),
-            'nip' => '198203102010011002',
-            'jabatan' => 'Kepala Bidang Layanan e-Government',
-            'unit_kerja' => 'Bidang Layanan e-Government',
-            'role' => 'atasan',
-        ]);
+        $atasanId = User::where('email', 'atasan1@siap.test')->value('id') ?? $adminId;
 
-        $atasanPersandian = User::create([
-            'name' => 'Siti (Atasan Bidang Persandian)',
-            'email' => 'siti@diskominfo.go.id',
-            'password' => Hash::make('password123'),
-            'nip' => '198407152011022003',
-            'jabatan' => 'Kepala Bidang Persandian',
-            'unit_kerja' => 'Bidang Persandian',
-            'role' => 'atasan',
-        ]);
-
-        // 4. Pegawai — di bawah masing-masing atasan
-        $pegawai1 = User::create([
-            'name' => 'Andi (Staf Bidang IT)',
-            'email' => 'andi@diskominfo.go.id',
-            'password' => Hash::make('password123'),
-            'nip' => '199001012015011001',
-            'jabatan' => 'Staf Layanan e-Government',
-            'unit_kerja' => 'Bidang Layanan e-Government',
-            'role' => 'pegawai',
-            'atasan_id' => $atasanIT->id,
-        ]);
-
-        $pegawai2 = User::create([
-            'name' => 'Rani (Staf Bidang Persandian)',
-            'email' => 'rani@diskominfo.go.id',
-            'password' => Hash::make('password123'),
-            'nip' => '199203152016022002',
-            'jabatan' => 'Staf Persandian',
-            'unit_kerja' => 'Bidang Persandian',
-            'role' => 'pegawai',
-            'atasan_id' => $atasanPersandian->id,
-        ]);
-
-        // Pengumuman contoh
-        Announcement::create([
-            'title' => 'Selamat Datang di SIAP',
-            'body' => 'Selamat datang di Sistem Informasi & Pembelajaran ASN Diskominfo Sawahlunto. Silakan cek menu Pengumuman, Surat & Dokumen, Workspace, dan Ujian secara berkala.',
-            'category' => 'rutin',
-            'target_unit_kerja' => null, // broadcast semua bidang
-            'created_by' => $admin->id,
-        ]);
-
-        Announcement::create([
-            'title' => 'Update Sistem Keamanan Bidang IT',
-            'body' => 'Mohon seluruh staf Bidang Layanan e-Government mengganti password akun masing-masing paling lambat akhir minggu ini.',
-            'category' => 'mendesak',
-            'target_unit_kerja' => 'Bidang Layanan e-Government',
-            'created_by' => $atasanIT->id,
-        ]);
-
-        // Surat & dokumen contoh
         Storage::disk('public')->makeDirectory('letters');
         Storage::disk('public')->put('letters/panduan-siap.txt', 'Ini adalah file contoh untuk modul Surat & Dokumen SIAP.');
 
-        Letter::create([
-            'title' => 'Panduan Penggunaan SIAP',
-            'nomor_surat' => '001/SIAP/2026',
-            'category' => 'lainnya',
-            'target_unit_kerja' => null,
-            'file_path' => 'letters/panduan-siap.txt',
-            'uploaded_by' => $admin->id,
-        ]);
+        Announcement::updateOrCreate(
+            ['title' => 'Selamat Datang di SIAP'],
+            [
+                'body' => 'Selamat datang di Sistem Informasi & Pembelajaran ASN Diskominfo Sawahlunto. Silakan cek menu Pengumuman, Surat & Dokumen, Workspace, dan Ujian secara berkala.',
+                'category' => 'rutin',
+                'target_unit_kerja' => null,
+                'created_by' => $adminId,
+            ]
+        );
 
-        // Pelatihan contoh
-        $training = Training::create([
-            'title' => 'Pelatihan Dasar Keamanan Siber',
-            'description' => 'Pelatihan dasar tentang keamanan siber untuk seluruh pegawai.',
-            'material_path' => null,
-            'target_unit_kerja' => null,
-            'created_by' => $admin->id,
-        ]);
+        Announcement::updateOrCreate(
+            ['title' => 'Update Sistem Keamanan Bidang IT'],
+            [
+                'body' => 'Mohon seluruh staf Bidang Layanan e-Government mengganti password akun masing-masing paling lambat akhir minggu ini.',
+                'category' => 'mendesak',
+                'target_unit_kerja' => 'Bidang Informasi dan Komunikasi Publik',
+                'created_by' => $atasanId,
+            ]
+        );
 
-        TrainingProgress::create([
-            'training_id' => $training->id,
-            'user_id' => $pegawai1->id,
-            'status' => 'selesai',
-            'completed_at' => now(),
-            'certificate_code' => 'CERT-' . strtoupper(uniqid()),
-        ]);
+        Letter::updateOrCreate(
+            ['title' => 'Panduan Penggunaan SIAP'],
+            [
+                'nomor_surat' => '001/SIAP/2026',
+                'category' => 'lainnya',
+                'target_unit_kerja' => null,
+                'file_path' => 'letters/panduan-siap.txt',
+                'uploaded_by' => $adminId,
+            ]
+        );
 
-        TrainingProgress::create([
-            'training_id' => $training->id,
-            'user_id' => $pegawai2->id,
-            'status' => 'sedang_berjalan',
-        ]);
+        $training = Training::updateOrCreate(
+            ['title' => 'Pelatihan Dasar Keamanan Siber'],
+            [
+                'description' => 'Pelatihan dasar tentang keamanan siber untuk seluruh pegawai.',
+                'material_path' => null,
+                'target_unit_kerja' => null,
+                'created_by' => $adminId,
+            ]
+        );
 
-        // Ujian contoh, terhubung ke pelatihan di atas
-        $exam = Exam::create([
-            'training_id' => $training->id,
-            'title' => 'Quiz Keamanan Siber Dasar',
-            'description' => 'Quiz sederhana tentang dasar keamanan siber.',
-            'target_unit_kerja' => null,
-            'duration_minutes' => 15,
-            'max_violations' => 3,
-            'created_by' => $admin->id,
-        ]);
+        $staf1Id = User::where('email', 'staf1@siap.test')->value('id');
+        $staf2Id = User::where('email', 'staf2@siap.test')->value('id');
 
-        $mcq = $exam->questions()->create([
-            'type' => 'pilihan_ganda',
-            'question' => 'Apa singkatan dari ISP dalam konteks internet?',
-            'order' => 1,
-        ]);
+        if ($staf1Id) {
+            TrainingProgress::firstOrCreate(
+                ['training_id' => $training->id, 'user_id' => $staf1Id],
+                [
+                    'status' => 'selesai',
+                    'completed_at' => now(),
+                    'certificate_code' => 'CERT-' . strtoupper(uniqid()),
+                ]
+            );
+        }
 
-        $mcq->options()->create(['option_text' => 'Internet Service Provider', 'is_correct' => true]);
-        $mcq->options()->create(['option_text' => 'Internal Security Protocol', 'is_correct' => false]);
-        $mcq->options()->create(['option_text' => 'Integrated Systems Programming', 'is_correct' => false]);
-        $mcq->options()->create(['option_text' => 'International Software Partnership', 'is_correct' => false]);
+        if ($staf2Id) {
+            TrainingProgress::firstOrCreate(
+                ['training_id' => $training->id, 'user_id' => $staf2Id],
+                [
+                    'status' => 'sedang_berjalan',
+                ]
+            );
+        }
 
-        $exam->questions()->create([
-            'type' => 'esai',
-            'question' => 'Jelaskan mengapa penting untuk memperbarui perangkat lunak antivirus secara teratur.',
-            'order' => 2,
-        ]);
+        $exam = Exam::updateOrCreate(
+            ['title' => 'Quiz Keamanan Siber Dasar'],
+            [
+                'training_id' => $training->id,
+                'description' => 'Quiz sederhana tentang dasar keamanan siber.',
+                'target_unit_kerja' => null,
+                'duration_minutes' => 15,
+                'max_violations' => 3,
+                'created_by' => $adminId,
+            ]
+        );
+
+        $mcq = $exam->questions()->updateOrCreate(
+            ['exam_id' => $exam->id, 'order' => 1],
+            [
+                'type' => 'pilihan_ganda',
+                'question' => 'Apa singkatan dari ISP dalam konteks internet?',
+            ]
+        );
+
+        $mcq->options()->firstOrCreate(['option_text' => 'Internet Service Provider', 'exam_question_id' => $mcq->id], ['is_correct' => true]);
+        $mcq->options()->firstOrCreate(['option_text' => 'Internal Security Protocol', 'exam_question_id' => $mcq->id], ['is_correct' => false]);
+        $mcq->options()->firstOrCreate(['option_text' => 'Integrated Systems Programming', 'exam_question_id' => $mcq->id], ['is_correct' => false]);
+        $mcq->options()->firstOrCreate(['option_text' => 'International Software Partnership', 'exam_question_id' => $mcq->id], ['is_correct' => false]);
+
+        $exam->questions()->updateOrCreate(
+            ['exam_id' => $exam->id, 'order' => 2],
+            [
+                'type' => 'esai',
+                'question' => 'Jelaskan mengapa penting untuk memperbarui perangkat lunak antivirus secara teratur.',
+            ]
+        );
 
         $this->command->info('Database seeded successfully!');
-        $this->command->info('Akun contoh (password semua: password123):');
-        $this->command->info('- admin@diskominfo.go.id (admin)');
-        $this->command->info('- pemilik@diskominfo.go.id (pemilik)');
-        $this->command->info('- budi@diskominfo.go.id / siti@diskominfo.go.id (atasan)');
-        $this->command->info('- andi@diskominfo.go.id / rani@diskominfo.go.id (pegawai)');
+        $this->command->info('Akun final (password semua: password123):');
+        $this->command->info('- admin.system@siap.test (admin)');
+        $this->command->info('- admin.library@siap.test (admin_library)');
+        $this->command->info('- pemilik@siap.test (pemilik)');
+        $this->command->info('- atasan1@siap.test / atasan2@siap.test (atasan)');
+        $this->command->info('- staf1@siap.test - staf6@siap.test (pegawai)');
+        $this->command->info('Library Phase 2.2 seeded: 5 level, kategori, 8 material, 11 akun (admin.system/admin.library/pemilik/atasan/staf final naming)');
     }
 }

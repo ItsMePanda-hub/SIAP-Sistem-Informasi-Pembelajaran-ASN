@@ -47,6 +47,16 @@ class User extends Authenticatable
         return $this->hasMany(User::class, 'atasan_id');
     }
 
+    public function readingProgress()
+    {
+        return $this->hasMany(ReadingProgress::class);
+    }
+
+    public function libraryBookmarks()
+    {
+        return $this->hasMany(LibraryBookmark::class);
+    }
+
     public function isAdmin(): bool
     {
         return $this->role === 'admin';

@@ -31,7 +31,7 @@ class UserController extends Controller
         abort_unless(Auth::user()->role === 'admin', 403);
 
         $validated = $request->validate([
-            'role' => 'required|in:pegawai,atasan,pemilik,admin',
+            'role' => 'required|in:pegawai,atasan,pemilik,admin,admin_library',
             'unit_kerja' => 'nullable|string|max:255',
             'jabatan' => 'nullable|string|max:255',
             'nip' => 'nullable|string|max:50',

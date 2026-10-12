@@ -19,6 +19,7 @@ class AuthServiceProvider extends ServiceProvider
         \App\Models\Letter::class => \App\Policies\LetterPolicy::class,
         \App\Models\Task::class => \App\Policies\TaskPolicy::class,
         \App\Models\TaskAssignment::class => \App\Policies\TaskPolicy::class,
+        \App\Models\LearningMaterial::class => \App\Policies\LearningMaterialPolicy::class,
     ];
 
     /**

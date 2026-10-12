@@ -49,6 +49,16 @@
                    class="block px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('exams.*') ? 'bg-primary text-white' : 'text-gray-500 hover:bg-primary-light hover:text-primary-dark' }}">
                     Ujian
                 </a>
+                <div class="pt-2">
+                    <div class="px-3 py-1 text-[11px] font-semibold uppercase tracking-wide text-gray-400">Pembelajaran</div>
+                    <a href="{{ route('library.index') }}"
+                       class="block px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('library.*') ? 'bg-primary text-white' : 'text-gray-500 hover:bg-primary-light hover:text-primary-dark' }}">
+                        SIAP Library
+                    </a>
+                    @can('create', \App\Models\LearningMaterial::class)
+                        <div class="px-3 py-1 text-[11px] text-gray-400">Kelola Library</div>
+                    @endcan
+                </div>
                 @if (in_array(auth()->user()->role, ['admin', 'pemilik']))
                 <a href="{{ route('users.index') }}"
                    class="block px-3 py-2 rounded-lg text-sm font-medium {{ request()->routeIs('users.*') ? 'bg-primary text-white' : 'text-gray-500 hover:bg-primary-light hover:text-primary-dark' }}">
