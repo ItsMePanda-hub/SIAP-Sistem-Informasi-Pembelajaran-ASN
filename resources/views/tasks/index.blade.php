@@ -2,7 +2,7 @@
     <x-slot name="header">Workspace</x-slot>
 
     <div class="max-w-5xl mx-auto space-y-4">
-        @if (in_array(auth()->user()->role, ['admin', 'atasan']))
+        @if (in_array(auth()->user()->role, ['admin', 'atasan', 'pemilik']))
             <div class="flex justify-end">
                 <a href="{{ route('tasks.create') }}" class="px-4 py-2 bg-primary text-white rounded-lg text-sm font-medium hover:bg-primary-dark transition">
                     + Buat Task Baru

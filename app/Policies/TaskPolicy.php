@@ -24,7 +24,7 @@ class TaskPolicy
 
     public function create(User $user): bool
     {
-        return in_array($user->role, ['admin', 'atasan']);
+        return in_array($user->role, ['admin', 'atasan', 'pemilik']);
     }
 
     public function view(User $user, Task $task): bool

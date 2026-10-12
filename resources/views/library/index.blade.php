@@ -30,7 +30,7 @@
                 @php
                     $activeFilters = [];
                     if (trim((string) request('q', '')) !== '') $activeFilters[] = 'Pencarian: "'.request('q').'"';
-                    foreach (['scope' => 'Scope', 'learning_level_id' => 'Level', 'learning_category_id' => 'Kategori', 'material_type' => 'Tipe', 'publication_status' => 'Publikasi', 'verification_status' => 'Verifikasi', 'validity_status' => 'Validitas', 'progress_status' => 'Progress'] as $k => $label) {
+                    foreach (['scope' => 'Scope', 'learning_level_id' => 'Level', 'learning_category_id' => 'Kategori', 'material_type' => 'Tipe', 'publication_status' => 'Publikasi', 'verification_status' => 'Verifikasi', 'validity_status' => 'Validitas', 'progress_status' => 'Progress', 'rights_status' => 'Hak'] as $k => $label) {
                         if (request()->filled($k)) $activeFilters[] = $label.': '.request($k);
                     }
                     if (request()->filled('sort')) $activeFilters[] = 'Urut: '.request('sort');
@@ -87,6 +87,14 @@
                             <option value="{{ $s->value }}" @selected(request('validity_status')===$s->value)>{{ ucfirst($s->value) }}</option>
                         @endforeach
                     </select>
+                    @if($isManager)
+                    <select name="rights_status" class="border border-gray-200 rounded-lg px-2 py-2 text-sm">
+                        <option value="">Semua Hak</option>
+                        <option value="unreviewed" @selected(request('rights_status')==='unreviewed')>Menunggu Review</option>
+                        <option value="approved" @selected(request('rights_status')==='approved')>Disetujui</option>
+                        <option value="rejected" @selected(request('rights_status')==='rejected')>Ditolak</option>
+                    </select>
+                    @endif
                 </div>
             </form>
         </div>
@@ -123,6 +131,13 @@
         </div>
         @endisset
 
+        @if($isManager && isset($pendingRightsCount) && $pendingRightsCount > 0)
+            <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center justify-between">
+                <div class="text-sm text-amber-800"><strong>{{ $pendingRightsCount }} materi menunggu review hak distribusi.</strong> Hak harus disetujui reviewer berbeda dari pengunggah, dengan bukti lisensi bila disyaratkan.</div>
+                <a href="{{ route('library.index', ['rights_status' => 'unreviewed']) }}" class="px-3 py-1.5 bg-amber-600 text-white rounded-lg text-xs font-medium hover:bg-amber-700">Lihat antrean review</a>
+            </div>
+        @endif
+
         <div class="bg-white shadow-sm rounded-xl border border-gray-100 overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="w-full text-sm">
@@ -137,6 +152,7 @@
                             <th class="px-4 py-3">Validitas</th>
                             <th class="px-4 py-3">Publikasi</th>
                             <th class="px-4 py-3">Sumber &amp; Lisensi</th>
+                            @if($isManager)<th class="px-4 py-3">Hak</th>@endif
                             <th class="px-4 py-3">Baca</th>
                             @if($isManager)<th class="px-4 py-3">Aksi</th>@endif
                         </tr>
@@ -165,10 +181,31 @@
                                         @if($m->source->license_type)
                                             <div class="mt-0.5"><span class="text-[10px] px-1.5 py-0.5 bg-gray-100 rounded text-gray-600 font-mono">{{ $m->source->license_type->value }}</span></div>
                                         @endif
+                                        @if(empty($m->source->license_url) && $m->source->license_type && $m->source->license_type->requiresEvidence())
+                                            <div class="mt-0.5 text-amber-600">Belum ada bukti lisensi</div>
+                                        @endif
+                                        @if($m->uploaded_by)
+                                            <div class="mt-0.5 text-gray-400">Pengunggah: {{ $m->uploader->name ?? 'User #'.$m->uploaded_by }}</div>
+                                        @endif
+                                        @if($m->source->rights_reviewed_by)
+                                            <div class="mt-0.5 text-gray-400">Reviewer: {{ $m->source->rightsReviewer->name ?? 'User #'.$m->source->rights_reviewed_by }}</div>
+                                        @endif
                                     @else
                                         <span class="text-gray-300">-</span>
                                     @endif
+                                    @if($m->isCore() && !$m->canCoreBePublished())
+                                        <div class="mt-1 text-amber-700">Belum layak publikasi: verifikasi, validitas, provenance, atau persetujuan hak belum lengkap.</div>
+                                    @endif
                                 </td>
+                                @if($isManager)
+                                <td class="px-4 py-3 text-center">
+                                    @php $rs = $m->source->rights_status ?? 'unreviewed'; @endphp
+                                    <span class="text-xs px-2 py-1 rounded-full {{ $rs==='approved'?'bg-green-50 text-green-700':($rs==='rejected'?'bg-red-50 text-red-700':'bg-amber-50 text-amber-700') }}">{{ $rs==='approved'?'Disetujui':($rs==='rejected'?'Ditolak':'Menunggu review') }}</span>
+                                    @if($m->uploaded_by && (int) $m->uploaded_by === (int) auth()->id())
+                                        <div class="mt-1 text-amber-600 text-xs">Anda pengunggah — tidak dapat menyetujui sendiri.</div>
+                                    @endif
+                                </td>
+                                @endif
                                 <td class="px-4 py-3 text-center">
                                     @can('view', $m)
                                         <a href="{{ route('library.read', $m) }}" class="inline-block px-3 py-1.5 bg-primary text-white rounded-lg text-xs font-medium hover:bg-primary-dark">Baca</a>
@@ -223,7 +260,7 @@
                                 @endif
                             </tr>
                         @empty
-                            <tr><td colspan="{{ $isManager?11:10 }}" class="px-4 py-6 text-center text-gray-400 text-sm">Belum ada materi.</td></tr>
+                            <tr><td colspan="{{ $isManager?12:10 }}" class="px-4 py-6 text-center text-gray-400 text-sm">Belum ada materi.</td></tr>
                         @endforelse
                     </tbody>
                 </table>

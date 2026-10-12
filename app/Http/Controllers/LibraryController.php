@@ -69,6 +69,16 @@ class LibraryController extends Controller
             $q->where('validity_status', $val);
         }
 
+        if ($isManager && in_array($rights = $request->query('rights_status'), ['unreviewed', 'approved', 'rejected'], true)) {
+            if ($rights === 'unreviewed') {
+                $q->where(function ($qq) {
+                    $qq->whereDoesntHave('source')->orWhereHas('source', fn ($s) => $s->where('rights_status', 'unreviewed')->orWhereNull('rights_status'));
+                });
+            } else {
+                $q->whereHas('source', fn ($s) => $s->where('rights_status', $rights));
+            }
+        }
+
         if (in_array($prog = $request->query('progress_status'), ['belum_mulai', 'sedang_membaca', 'selesai'], true) && $user) {
             if ($prog === 'belum_mulai') {
                 $q->whereDoesntHave('readingProgress', function ($qq) use ($user) {
@@ -113,7 +123,14 @@ class LibraryController extends Controller
         }
 
         $hasDiscovery = trim((string) $request->query('q', '')) !== ''
-            || collect(['scope', 'learning_level_id', 'learning_category_id', 'material_type', 'publication_status', 'verification_status', 'validity_status', 'progress_status', 'sort'])->contains(fn ($k) => $request->filled($k));
+            || collect(['scope', 'learning_level_id', 'learning_category_id', 'material_type', 'publication_status', 'verification_status', 'validity_status', 'progress_status', 'rights_status', 'sort'])->contains(fn ($k) => $request->filled($k));
+
+        $pendingRightsCount = null;
+        if ($isManager) {
+            $pendingRightsCount = LearningMaterial::where(function ($q) {
+                $q->whereDoesntHave('source')->orWhereHas('source', fn ($s) => $s->where('rights_status', 'unreviewed')->orWhereNull('rights_status'));
+            })->count();
+        }
 
         $recommendations = $hasDiscovery ? collect() : $recommender->getRecommendations($user);
 
@@ -123,6 +140,7 @@ class LibraryController extends Controller
             'bookmarkSet' => $bookmarkSet,
             'recommendations' => $recommendations,
             'isManager' => $isManager,
+            'pendingRightsCount' => $pendingRightsCount,
             'levels' => LearningLevel::orderBy('sort_order')->get(),
             'categories' => LearningCategory::orderBy('name')->get(),
             'scopes' => LearningMaterialScope::cases(),

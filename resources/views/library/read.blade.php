@@ -78,23 +78,42 @@
                 <div class="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
                     <div id="progress-bar" class="bg-primary h-1.5 rounded-full transition-all" style="width: {{ $progress->progress_percent ?? 0 }}%"></div>
                 </div>
-                <article id="native-content" class="text-gray-800 text-base leading-7 md:leading-8 break-words">
+                <style>
+                    #native-content{--native-lh:1.8}
+                    #native-content p{margin:0.85em 0;line-height:1.8;overflow-wrap:break-word;hyphens:auto}
+                    #native-content h2{font-size:1.17rem;line-height:1.35;font-weight:700;letter-spacing:-0.015em;color:#111827;margin:2em 0 0.65em;padding-bottom:0.35em;border-bottom:1px solid #f3f4f6}
+                    #native-content h3{font-size:1rem;line-height:1.45;font-weight:600;color:#1f2937;margin:1.5em 0 0.55em}
+                    #native-content ol,#native-content ul{margin:0.9em 0 0.9em 1.1em;line-height:1.75;text-align:left;text-indent:0}
+                    #native-content ol{padding-left:1.1em}
+                    #native-content ul{padding-left:1em}
+                    #native-content li{margin:0.38em 0;padding-left:0.15em}
+                    #native-content li::marker{color:#6b7280}
+                    #native-content h2,#native-content h3,#native-content li{text-align:left;text-indent:0}
+                    @media(min-width:768px){
+                        #native-content p{text-align:justify;text-justify:inter-word;text-indent:1.5em}
+                        #native-content h2+p,#native-content h3+p,#native-content ul+p,#native-content ol+p{ text-indent:0 }
+                    }
+                    @media(max-width:767px){
+                        #native-content p{text-align:left;text-indent:0}
+                    }
+                </style>
+                <article id="native-content" class="text-gray-800 text-[15px] md:text-base break-words">
                     @php $nativeBlocks = \App\Support\NativeContentRenderer::blocks((string) $learningMaterial->content); @endphp
                     @foreach($nativeBlocks as $block)
                         @if($block['type'] === 'heading' && $block['level'] === 2)
-                            <h2 class="text-lg font-semibold text-gray-900 mt-6 mb-2 leading-snug">{{ $block['text'] }}</h2>
+                            <h2>{{ $block['text'] }}</h2>
                         @elseif($block['type'] === 'heading')
-                            <h3 class="text-base font-semibold text-gray-900 mt-5 mb-2">{{ $block['text'] }}</h3>
+                            <h3>{{ $block['text'] }}</h3>
                         @elseif($block['type'] === 'list' && $block['ordered'])
-                            <ol class="list-decimal list-inside space-y-1 ml-1 text-gray-800 leading-7">
+                            <ol class="list-decimal list-outside text-gray-800">
                                 @foreach($block['items'] as $item)<li>{{ $item }}</li>@endforeach
                             </ol>
                         @elseif($block['type'] === 'list')
-                            <ul class="list-disc list-inside space-y-1 ml-1 text-gray-800 leading-7">
+                            <ul class="list-disc list-outside text-gray-800">
                                 @foreach($block['items'] as $item)<li>{{ $item }}</li>@endforeach
                             </ul>
                         @else
-                            <p class="text-gray-800 leading-7">{{ $block['text'] }}</p>
+                            <p>{{ $block['text'] }}</p>
                         @endif
                     @endforeach
                 </article>
