@@ -583,6 +583,6 @@ class LibraryController extends Controller
 
     private function isManager($user): bool
     {
-        return in_array($user->role, ['admin', 'admin_library', 'pemilik'], true);
+        return in_array($user->role, ['admin_library', 'pemilik'], true);
     }
 }

@@ -23,7 +23,9 @@
                             </td>
                             <td class="px-4 py-3 text-gray-500">{{ $u->unit_kerja ?? '-' }}</td>
                             <td class="px-4 py-3 text-right">
-                                <a href="{{ route('users.edit', $u) }}" class="text-primary-dark hover:underline">Atur</a>
+                                @if(auth()->user()->role === 'admin')
+                                    <a href="{{ route('users.edit', $u) }}" class="text-primary-dark hover:underline">Atur</a>
+                                @endif
                             </td>
                         </tr>
                     @endforeach

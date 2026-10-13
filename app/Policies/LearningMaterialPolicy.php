@@ -7,18 +7,9 @@ use App\Models\User;
 
 class LearningMaterialPolicy
 {
-    public function before(User $user, string $ability): bool|null
-    {
-        if ($user->role === 'admin') {
-            return true;
-        }
-
-        return null;
-    }
-
     private function isLibraryManager(User $user): bool
     {
-        return in_array($user->role, ['admin', 'admin_library', 'pemilik'], true);
+        return in_array($user->role, ['admin_library', 'pemilik'], true);
     }
 
     public function viewAny(User $user): bool

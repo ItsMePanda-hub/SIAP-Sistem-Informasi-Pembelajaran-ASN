@@ -12,7 +12,7 @@ class LibraryRecommendationService
 {
     public function getRecommendations(User $user, int $limit = 6): Collection
     {
-        $isManager = in_array($user->role, ['admin', 'admin_library', 'pemilik'], true);
+        $isManager = in_array($user->role, ['admin_library', 'pemilik'], true);
 
         $progressMap = ReadingProgress::where('user_id', $user->id)
             ->pluck('progress_percent', 'learning_material_id')
